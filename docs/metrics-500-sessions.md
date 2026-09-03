@@ -1,0 +1,52 @@
+# Dwarpal batch metrics
+
+500 sessions, seed 11, 3 agents, scripted carts against the real gate and state machine with fake payments. Generated 2026-09-03 18:19 UTC.
+
+## Outcomes
+
+| Outcome | Sessions |
+|---|---|
+| canceled | 1 |
+| completed | 47 |
+| refused | 452 |
+
+Intended scenario mix: abandoned 18, allowed_paid 285, payfail_then_paid 73, refused 124.
+
+## Denials by rule (every denial names its rule)
+
+| Rule | Count |
+|---|---|
+| G03_ITEMS_KNOWN | 19 |
+| G04_IN_STOCK | 25 |
+| G06_MERCHANT_CATEGORY | 27 |
+| G07_QTY_PER_LINE | 25 |
+| G10_PER_TXN_CAP | 28 |
+| G11_DAILY_CAP | 269 |
+| G12_TOTAL_CAP | 59 |
+
+## Bounded
+
+- Mandate overruns (committed + reserved vs per-transaction, daily and total caps): **0**
+
+## Failure recovery
+
+- First payment attempt failed and a fresh link was issued: 10
+- Of those, paid on the second attempt: 9
+- Sessions whose reserved budget was released (cancel, abandon, provider error): 1
+
+## Cross-sell
+
+- Sessions with an offer: 41
+- Offers accepted: 24
+- Attach rate: **58%**
+- Average completed basket with an accepted offer: INR 2,918.20
+- Average completed basket without: INR 1,919.82
+- Completed revenue: INR 114,193.00
+
+## Audit
+
+- Ledger chain: verified (1474 events)
+
+## What this does and does not prove
+
+These are scripted inputs run through deterministic code, so zero overruns and fully explained denials are expected by construction; the evidence is that the failure paths really fire and that the accounting holds across many sessions. Nothing here measures a particular language model: the cross-sell picker and the buyer are scripted in this batch.
