@@ -13,7 +13,7 @@ def test_every_scenario_has_a_plan_and_intent():
 
 @pytest.mark.parametrize("scenario,outcome", [
     ("happy", "paid"), ("refused", "refused"), ("replan", "paid"), ("payfail", "paid"), ("crosssell", "paid"),
-    ("review", "paid"),
+    ("review", "paid"), ("refund", "paid"),
 ])
 def test_run_demo_scenarios_on_fakes(world, scenario, outcome):
     ctx = make_ctx(world)
@@ -31,6 +31,8 @@ def test_run_demo_scenarios_on_fakes(world, scenario, outcome):
         assert "G06_MERCHANT_CATEGORY" in text
     if scenario == "review":
         assert "review.requested" in text and "review.approved" in text
+    if scenario == "refund":
+        assert "refund.decision" in text and "refund.created" in text
     agents = world.agents.all()
     assert agents[-1].name.startswith("demo-") and world.mandates.active_for(agents[-1].id, world.clock.now)
     assert any(e.type == "agent.registered" for e in world.ledger.events())

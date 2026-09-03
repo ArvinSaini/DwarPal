@@ -46,6 +46,10 @@ class Recorder:
                 me._rec("payment.all", params, kw)
                 return me.all_payments
 
+            def refund(self, payment_id, data=None, **kw):
+                me._rec("payment.refund", (payment_id, data), kw)
+                return {"id": "rfnd_1", "status": "pending", "amount": data["amount"]}
+
         class Item:
             def all(self, params=None, **kw):
                 me._rec("item.all", params, kw)
@@ -191,3 +195,13 @@ def test_verify_webhook_signature():
     assert verify_webhook_signature(body, " " + good + "\n", "whsec")
     assert not verify_webhook_signature(body, "nope", "whsec")
     assert not verify_webhook_signature(body, "", "whsec")
+
+
+def test_refund_calls_sdk_with_amount_and_notes(adapter, stub):
+    info = adapter.refund("pay_9", 500, {"session_id": "cs_1", "reference": "r1"})
+    assert info.refund_id == "rfnd_1" and info.status == "pending" and info.amount_paise == 500
+    name, (pid, data), kw = stub.named("payment.refund")[0]
+    assert pid == "pay_9" and data["amount"] == 500 and data["notes"]["reference"] == "r1" and kw["timeout"] == 10
+    stub.raise_on = {"payment.refund"}
+    with pytest.raises(PaymentsError):
+        adapter.refund("pay_9", 1, {})

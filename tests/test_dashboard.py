@@ -129,3 +129,22 @@ def test_review_queue_in_dashboard(app_client, world):
     assert world.sessions.get_any(s["id"])["status"] == "ready_for_payment"
     r = app_client.post(f"/dashboard/sessions/{s['id']}/decline", data={"note": "x"}, follow_redirects=False)
     assert r.status_code == 303 and ("wrong" in r.headers["location"] or "is%20" in r.headers["location"])
+
+
+def test_refund_from_dashboard(app_client, world):
+    login(app_client)
+    s = app_client.post("/agent/v1/checkout_sessions", json={"items": SHOES}, headers={"Idempotency-Key": "k"}).json()
+    app_client.post(f"/agent/v1/checkout_sessions/{s['id']}/complete", headers={"Idempotency-Key": "c"})
+    app_client.get(f"/agent/v1/checkout_sessions/{s['id']}")
+    r = app_client.get(f"/dashboard/sessions/{s['id']}")
+    assert "Refund" in r.text
+    r = app_client.post(f"/dashboard/sessions/{s['id']}/refund",
+                        data={"amount": "5", "reason": "goodwill", "reference": "gw-1"}, follow_redirects=False)
+    assert r.status_code == 303
+    assert world.sessions.get_any(s["id"])["refunds"][0]["amount_paise"] == 500
+    r = app_client.post(f"/dashboard/sessions/{s['id']}/refund",
+                        data={"amount": "99999", "reason": "too much", "reference": "gw-2"}, follow_redirects=False)
+    assert r.status_code == 303 and "RF02" in r.headers["location"]
+    r = app_client.post(f"/dashboard/sessions/{s['id']}/refund",
+                        data={"amount": "abc", "reason": "x", "reference": "gw-3"}, follow_redirects=False)
+    assert r.status_code == 303 and "number" in r.headers["location"]

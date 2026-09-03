@@ -111,6 +111,83 @@ class Decision:
         }
 
 
+@dataclass
+class RefundInput:
+    session_status: str | None
+    captured_paise: int
+    refunded_paise: int
+    amount_paise: object
+    reason: object
+    reference: object
+    seen_references: tuple[str, ...]
+    captured_at: int | None
+    now: int
+    window_days: int
+
+
+REFUND_RULE_IDS = ("RF00_WELL_FORMED", "RF01_SESSION_COMPLETED", "RF02_WITHIN_CAPTURE", "RF03_NO_DUPLICATE",
+                   "RF04_WITHIN_WINDOW")
+
+
+def evaluate_refund(ri: RefundInput) -> Decision:
+    """Refunds are money actions too. Same shape as ``evaluate``: ordered rules, first failure decides, never raises."""
+    checks: list[Check] = []
+    try:
+        return _evaluate_refund(ri, checks)
+    except Exception as exc:
+        detail = f"internal error {type(exc).__name__}: {exc}"
+        checks.append(Check(GUARD_RULE, False, detail))
+        return Decision(DENY, GUARD_RULE, f"gate error: {type(exc).__name__}", checks, [], 0)
+
+
+def _evaluate_refund(ri: RefundInput, checks: list[Check]) -> Decision:
+    def ok(rule: str, detail: str) -> None:
+        checks.append(Check(rule, True, detail))
+
+    def fail(rule: str, detail: str, amount: int = 0) -> Decision:
+        checks.append(Check(rule, False, detail))
+        return Decision(DENY, rule, detail, checks, [], amount)
+
+    amount = ri.amount_paise
+    if type(amount) is not int or amount < 1:
+        return fail("RF00_WELL_FORMED", "refund amount must be an integer number of paise >= 1")
+    if not isinstance(ri.reason, str) or not ri.reason.strip() or len(ri.reason) > 200:
+        return fail("RF00_WELL_FORMED", "a reason of 1 to 200 characters is required", amount)
+    if not isinstance(ri.reference, str) or not ri.reference.strip() or len(ri.reference) > 64:
+        return fail("RF00_WELL_FORMED", "a reference of 1 to 64 characters is required (used to prevent duplicates)", amount)
+    ok("RF00_WELL_FORMED", f"refund {rupees(amount)} with reason and reference {ri.reference!r}")
+
+    if ri.session_status != "completed" or type(ri.captured_paise) is not int or ri.captured_paise <= 0:
+        return fail("RF01_SESSION_COMPLETED",
+                    f"session is {ri.session_status!r} with {rupees(ri.captured_paise) if type(ri.captured_paise) is int else ri.captured_paise!r} captured; only a completed, captured session can be refunded",
+                    amount)
+    ok("RF01_SESSION_COMPLETED", f"session completed with {rupees(ri.captured_paise)} captured")
+
+    remaining = ri.captured_paise - ri.refunded_paise
+    if amount > remaining:
+        return fail("RF02_WITHIN_CAPTURE",
+                    f"refund {rupees(amount)} exceeds the refundable balance {rupees(remaining)} "
+                    f"({rupees(ri.captured_paise)} captured, {rupees(ri.refunded_paise)} already refunded)", amount)
+    ok("RF02_WITHIN_CAPTURE", f"refund {rupees(amount)} within the refundable balance {rupees(remaining)}")
+
+    if ri.reference in ri.seen_references:
+        return fail("RF03_NO_DUPLICATE", f"reference {ri.reference!r} was already refunded on this session", amount)
+    ok("RF03_NO_DUPLICATE", "reference not seen before on this session")
+
+    if type(ri.window_days) is int and ri.window_days > 0:
+        if ri.captured_at is None:
+            return fail("RF04_WITHIN_WINDOW", "capture time unknown; cannot verify the refund window", amount)
+        deadline = ri.captured_at + ri.window_days * 86400
+        if ri.now > deadline:
+            return fail("RF04_WITHIN_WINDOW",
+                        f"refund window of {ri.window_days} days after capture has passed", amount)
+        ok("RF04_WITHIN_WINDOW", f"within the {ri.window_days}-day refund window")
+    else:
+        ok("RF04_WITHIN_WINDOW", "merchant has not set a refund window")
+
+    return Decision(ALLOW, ALLOW, f"all {len(checks)} refund checks passed", checks, [], amount)
+
+
 def gate_agent(agent) -> GateAgent | None:
     return None if agent is None else GateAgent(agent.id, agent.status)
 
