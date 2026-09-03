@@ -166,3 +166,11 @@ def test_refund_command(run):
     assert code == 0 and "rfnd_" in out and "INR 699.00" in out
     code, out = run("refund", sid, "--amount", "99999", "--reason", "x", "--reference", "sf-2")
     assert code == 1 and "RF02" in out
+
+
+def test_ledger_replay_command(run):
+    run("init")
+    run("seed")
+    run("demo", "--scenario", "replan", "--payments", "fake")
+    code, out = run("ledger", "replay")
+    assert code == 0 and "identical" in out and "0 skipped" in out

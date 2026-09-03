@@ -170,13 +170,37 @@ class SessionService:
         approved = self._approved(session_id, self._expected_total(items))
         gi = GateInput(gate_agent(agent), gate_mandate(mandate), self.policies.get(), self.catalog.snapshot(), items,
                        spent_today, spent_total, now, status, mode, merchant_approved=approved)
+        self._last_input = gi
         return evaluate(gi), mandate, spent_today, spent_total, now
+
+    @staticmethod
+    def _recorded_input(gi: GateInput) -> dict:
+        """Everything the pure gate consumed, so the decision can be replayed offline. The catalog is trimmed
+        to the items in the cart because the gate reads nothing else."""
+        ids = {it.get("id") for it in gi.items if isinstance(it, dict)} if isinstance(gi.items, list) else set()
+        return {
+            "agent": {"id": gi.agent.id, "status": gi.agent.status} if gi.agent else None,
+            "mandate": {"id": gi.mandate.id, "currency": gi.mandate.currency,
+                        "per_txn_cap_paise": gi.mandate.per_txn_cap_paise, "daily_cap_paise": gi.mandate.daily_cap_paise,
+                        "total_cap_paise": gi.mandate.total_cap_paise, "categories": list(gi.mandate.categories),
+                        "starts_at": gi.mandate.starts_at, "expires_at": gi.mandate.expires_at,
+                        "status": gi.mandate.status} if gi.mandate else None,
+            "policy": gi.policy,
+            "catalog": {pid: snap for pid, snap in gi.catalog.items() if pid in ids},
+            "items": gi.items,
+            "spent_today_paise": gi.spent_today_paise, "spent_total_paise": gi.spent_total_paise,
+            "now": gi.now, "session_status": gi.session_status, "mode": gi.mode,
+            "merchant_approved": gi.merchant_approved,
+        }
 
     def _log_decision(self, session_id: str, decision: Decision, mode: str, spent_today: int, spent_total: int,
                       now: int) -> None:
-        self.ledger.append("gate.decision", "gate",
-                           {"mode": mode, **decision.to_dict(), "spent_today_paise": spent_today,
-                            "spent_total_paise": spent_total, "now": now}, session_id)
+        gi = getattr(self, "_last_input", None)
+        payload = {"mode": mode, **decision.to_dict(), "spent_today_paise": spent_today,
+                   "spent_total_paise": spent_total, "now": now}
+        if gi is not None:
+            payload["input"] = self._recorded_input(gi)
+        self.ledger.append("gate.decision", "gate", payload, session_id)
 
     @staticmethod
     def _status_for(decision: Decision) -> str:
@@ -513,10 +537,11 @@ class SessionService:
             window_days=self.policies.get().get("refund_window_days", 30),
         )
         decision = evaluate_refund(ri)
+        recorded_input = {**ri.__dict__, "seen_references": list(ri.seen_references)}
         self.ledger.append("refund.decision", "gate",
                            {**decision.to_dict(), "amount_paise": amount_paise, "reference": reference,
-                            "reason": reason, "captured_paise": ri.captured_paise, "refunded_paise": ri.refunded_paise,
-                            "now": ri.now}, session_id)
+                            "refund_reason": reason, "captured_paise": ri.captured_paise,
+                            "refunded_paise": ri.refunded_paise, "now": ri.now, "input": recorded_input}, session_id)
         if not decision.allowed:
             raise SessionError(409, "policy_denied", "refund_denied", decision.reason,
                                extra={"rule_id": decision.rule_id, "session_id": session_id})

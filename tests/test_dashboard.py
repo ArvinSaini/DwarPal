@@ -148,3 +148,10 @@ def test_refund_from_dashboard(app_client, world):
     r = app_client.post(f"/dashboard/sessions/{s['id']}/refund",
                         data={"amount": "abc", "reason": "x", "reference": "gw-3"}, follow_redirects=False)
     assert r.status_code == 303 and "number" in r.headers["location"]
+
+
+def test_ledger_replay_button(app_client, world):
+    login(app_client)
+    app_client.post("/agent/v1/checkout_sessions", json={"items": SHOES}, headers={"Idempotency-Key": "k"})
+    r = app_client.post("/dashboard/ledger/replay")
+    assert r.status_code == 200 and "identical" in r.text

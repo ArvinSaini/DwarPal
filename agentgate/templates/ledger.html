@@ -8,7 +8,11 @@
 </div>
 <div class="actions">
   <form method="post" action="/dashboard/ledger/verify"><button type="submit">Verify chain now</button></form>
+  <form method="post" action="/dashboard/ledger/replay"><button type="submit" class="secondary">Replay every decision</button></form>
 </div>
+{% if replay_text is not none %}
+<div class="{{ 'flash' if replay_ok else 'error' }}"><strong>Replay:</strong> <pre style="margin:6px 0 0; white-space: pre-wrap">{{ replay_text }}</pre></div>
+{% endif %}
 <p class="muted">Head <span class="mono">{{ head }}</span>. Each event's hash covers the previous hash and the event body, so editing, inserting, deleting or reordering any past event breaks verification. Keep the head hash somewhere else to detect tail truncation.</p>
 <section class="card">
   <h2>Events{% if total > events|length %} (last {{ events|length }} of {{ total }}){% endif %}</h2>

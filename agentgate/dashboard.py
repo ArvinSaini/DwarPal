@@ -274,10 +274,10 @@ def install_dashboard(app: FastAPI, ctx) -> None:
 
     # -- ledger -----------------------------------------------------------------------------------
 
-    def ledger_page(request: Request):
+    def ledger_page(request: Request, replay_text: str | None = None, replay_ok: bool | None = None):
         events = ctx.ledger.events()
         return render(request, "ledger.html", events=events[-300:], total=len(events), verify=ctx.ledger.verify(),
-                      head=ctx.ledger.head())
+                      head=ctx.ledger.head(), replay_text=replay_text, replay_ok=replay_ok)
 
     @router.get("/ledger", response_class=HTMLResponse)
     def ledger_get(request: Request, _=Depends(require_merchant)):
@@ -286,6 +286,13 @@ def install_dashboard(app: FastAPI, ctx) -> None:
     @router.post("/ledger/verify", response_class=HTMLResponse)
     def ledger_verify(request: Request, _=Depends(require_merchant)):
         return ledger_page(request)
+
+    @router.post("/ledger/replay", response_class=HTMLResponse)
+    def ledger_replay(request: Request, _=Depends(require_merchant)):
+        from agentgate.replay import render_report, replay
+
+        report = replay(ctx.ledger)
+        return ledger_page(request, render_report(report), report.ok)
 
     @router.get("/ledger/receipt/{session_id}")
     def ledger_receipt(session_id: str, _=Depends(require_merchant)):
