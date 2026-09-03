@@ -87,3 +87,45 @@ class FakePicker:
                       else f"Popular add-on for {cart[0].title}")
             offers.append(Offer(p.id, p.title, p.price_paise, reason))
         return offers
+
+
+CROSSSELL_SYSTEM = """You suggest at most two complementary add-ons for a shopping cart. Choose only from the candidate ids given.
+Reply with a JSON list only: [{"id": "<candidate id>", "reason": "<one short sentence>"}]. Reply [] if nothing fits."""
+
+
+class LLMPicker:
+    """Asks a model to choose from the deterministic candidate set. Invalid ids are dropped; errors mean no offers."""
+
+    def __init__(self, llm, name: str = "llm"):
+        self.llm = llm
+        self.name = name
+
+    def pick(self, cart: list[Product], candidates: list[Product]) -> list[Offer]:
+        if not cart or not candidates:
+            return []
+        from agentgate.llm import LLMError
+        from agentgate.money import rupees
+
+        user = ("Cart:\n" + "\n".join(f"- {p.title} ({rupees(p.price_paise)})" for p in cart)
+                + "\n\nCandidates:\n"
+                + "\n".join(f"- id={p.id} | {p.title} | {rupees(p.price_paise)} | tags: {', '.join(p.tags)}"
+                            for p in candidates))
+        try:
+            raw = self.llm.complete_json(CROSSSELL_SYSTEM, user)
+        except LLMError:
+            return []
+        if not isinstance(raw, list):
+            return []
+        by_id = {p.id: p for p in candidates}
+        offers: list[Offer] = []
+        for item in raw:
+            if not isinstance(item, dict):
+                continue
+            product = by_id.get(item.get("id"))
+            if product is None or any(o.id == product.id for o in offers):
+                continue
+            reason = str(item.get("reason") or "Suggested add-on").strip()[:140]
+            offers.append(Offer(product.id, product.title, product.price_paise, reason))
+            if len(offers) == MAX_OFFERS:
+                break
+        return offers

@@ -59,3 +59,30 @@ def test_no_candidates_no_offers():
     assert FakePicker().pick([BY_ID["prod_shoes"]], []) == []
     assert NoPicker().pick([BY_ID["prod_shoes"]], [BY_ID["prod_socks"]]) == []
     assert isinstance(Offer("x", "t", 1, "r"), Offer)
+
+
+# -- LLM picker -----------------------------------------------------------------------------------
+
+def test_llm_picker_validates_ids_and_caps_two():
+    from agentgate.crosssell import LLMPicker
+    from agentgate.llm import FakeLLM
+
+    cart = [BY_ID["prod_shoes"]]
+    cands = candidates(cart, SEED_PRODUCTS, DEFAULT_POLICY, mandate(), 0, 0)
+    llm = FakeLLM(['[{"id":"prod_socks","reason":"pairs with shoes"},{"id":"prod_watch","reason":"x"},'
+                   '{"id":"prod_socks","reason":"dup"},{"id":"prod_cap","reason":"sun"},{"id":"prod_bottle","reason":"y"}]'])
+    offers = LLMPicker(llm, "m").pick(cart, cands)
+    assert [o.id for o in offers] == ["prod_socks", "prod_cap"] and offers[0].reason == "pairs with shoes"
+    assert "prod_watch" not in llm.calls[0]["messages"][1]["content"]  # never offered to the model
+
+
+def test_llm_picker_bad_output_or_no_candidates_gives_no_offers():
+    from agentgate.crosssell import LLMPicker
+    from agentgate.llm import FakeLLM
+
+    cart = [BY_ID["prod_shoes"]]
+    cands = candidates(cart, SEED_PRODUCTS, DEFAULT_POLICY, mandate(), 0, 0)
+    assert LLMPicker(FakeLLM(["nope"]), "m").pick(cart, cands) == []
+    assert LLMPicker(FakeLLM(['{"id":"prod_socks"}']), "m").pick(cart, cands) == []
+    llm = FakeLLM([])
+    assert LLMPicker(llm, "m").pick(cart, []) == [] and llm.calls == []
