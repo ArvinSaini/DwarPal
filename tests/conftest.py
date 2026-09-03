@@ -69,3 +69,27 @@ def world(conn, clock) -> World:
     agent, key = agents.register("shopbot")
     mandate = mandates.create(agent.id, 400000, 800000, 2000000, [], clock.now + 7 * 86400)
     return World(conn, clock, ledger, catalog, policies, agents, mandates, payments, sessions, agent, key, mandate)
+
+
+def make_client(world: World, **settings_over):
+    """A FastAPI TestClient wired to the test world. Authenticated as the world's agent by default."""
+    from fastapi.testclient import TestClient
+
+    from agentgate.api import create_app
+    from agentgate.config import Settings
+    from agentgate.context import AppContext
+
+    overrides = {"razorpay_webhook_secret": "whsec", "merchant_token": "merchant-secret"}
+    overrides.update(settings_over)
+    settings = Settings(db_path=":memory:", **overrides)
+    ctx = AppContext(settings=settings, conn=world.conn, clock=world.clock, ledger=world.ledger,
+                     catalog=world.catalog, policies=world.policies, agents=world.agents, mandates=world.mandates,
+                     payments=world.payments, picker=FakePicker(), enricher=None, sessions=world.sessions)
+    client = TestClient(create_app(ctx))
+    client.headers.update({"Authorization": f"Bearer {world.api_key}"})
+    return client
+
+
+@pytest.fixture
+def app_client(world):
+    return make_client(world)
