@@ -23,10 +23,17 @@ retry with a fresh link, then a clean abandon. Every step lands in a hash-chaine
 a tamper demo. A bounded cross-sell grows the basket: the model picks at most two add-ons from a candidate set
 that already fits every cap, the agent may accept, the gate judges the result.
 
+Two more money actions are gated the same way. Orders above a merchant-set threshold get the verdict REVIEW and wait
+for a human in the dashboard's review queue; an approval covers that exact total only. Refunds pass their own five
+rules before the Razorpay refund API is called, and give budget back to the agent's mandate. Every decision event
+records the exact input the gate consumed, so `ledger replay` can re-run the gate offline and prove the recorded
+reasoning, on top of `ledger verify` proving the record itself.
+
 Where the model is: catalog enrichment, cross-sell picks, the demo buyer agent. Where it is not: any decision
-about money. A batch of fifty scripted sessions reports denials by rule, zero mandate overruns, failures retried
-and recovered, attach rate and a verified chain. The repo has 234 offline tests, a merchant dashboard, a CLI, and
-a buyer agent that replans after a refusal.
+about money. An adversarial eval of 24 hand-built cases blocks 16 of 16 abusive carts with 0 of 7 benign carts
+wrongly blocked, across 12 distinct rules. A batch of fifty scripted sessions reports denials by rule, zero mandate
+overruns, failures retried and recovered, attach rate and a verified chain. The repo has 281 offline tests, a
+merchant dashboard, a CLI with seven demo scenarios, and a buyer agent that replans after a refusal.
 
 **Build challenges and technical obstacles**
 - Razorpay has no public delegated-payment token for agents yet, so "end to end" has to be honest: the agent

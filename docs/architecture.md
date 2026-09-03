@@ -93,11 +93,24 @@ Every rule that ran is recorded with a plain-English detail, so the ledger and t
 | G11_DAILY_CAP | today's reserved + committed spend + total ≤ daily cap | mandate |
 | G12_TOTAL_CAP | all reserved + committed spend + total ≤ total cap | mandate |
 | G13_SESSION_STATE | the session is in a state where this evaluation makes sense (replay guard) | session |
+| G14_REVIEW_THRESHOLD | total above the merchant's review threshold → verdict REVIEW, unless the merchant approved this exact total | merchant policy |
 | G99_GATE_ERROR | guard: any internal error becomes a DENY with the exception type in the trail | guard |
 
 Three modes share the rules: `preview` on create and update (no money reserved), `authoritative` on
 complete (money reserved, link created), `retry` before a second payment attempt (the session's own
 reservation is excluded from spend so the retry is judged fairly).
+
+Refunds are money actions too. `evaluate_refund(RefundInput)` runs RF00 (well-formed amount, reason, reference),
+RF01 (session completed with a captured payment), RF02 (within the refundable balance), RF03 (no duplicate
+reference), RF04 (inside the policy's refund window), with the same G99 guard. A refund returns budget against the
+mandate's total cap but not the daily cap.
+
+## Merchant review queue
+
+Orders above `policy.review_above_paise` get verdict REVIEW and the status `requires_review`. The merchant approves
+or declines in the dashboard (or `review approve|decline` on the CLI). An approval is stored with the exact total it
+covers; if the agent changes the cart, the gate asks again. A decline moves the session to `not_ready_for_payment`
+with a message the agent can read and react to.
 
 ## Where money moves
 
@@ -116,6 +129,8 @@ the link's order once it exists, and from the payments list matched on notes bef
 |---|---|---|---|
 | — | create, ALLOW | ready_for_payment | offers; `session.created`, `gate.decision`, `crosssell.offered` |
 | — | create, DENY | not_ready_for_payment | `messages[]` carries the rule and reason |
+| — | create, REVIEW | requires_review | `review.requested`; the merchant approves (→ ready) or declines (→ not_ready) |
+| completed | merchant refund, RF ALLOW | completed | `refund.decision`, `refund.created`; budget returned to the mandate |
 | not_ready / ready | update | re-evaluated | `session.updated`, `gate.decision`, `crosssell.accepted` if an offer was taken |
 | ready | complete, ALLOW | payment_pending (attempt 1) | reserve; create link |
 | ready | complete, DENY | not_ready_for_payment | HTTP 409 `policy_denied` with `rule_id` |
@@ -136,6 +151,13 @@ events and the chain status. `tamper` edits one amount in place for the demo so 
 The chain detects modification, insertion, deletion and reordering. It does not detect truncation of the
 tail or a re-hashed last event, so the receipt's head hash is the anchor to keep somewhere else. Tamper-evident,
 not tamper-proof.
+
+### Replay
+
+Every `gate.decision` and `refund.decision` event carries the exact input the pure gate consumed: agent, mandate,
+policy, the catalog entries for the items in the cart, the cart, prior spend, the clock, the mode and whether a
+merchant approval applied. `ledger replay` rebuilds each input, re-runs the gate and compares verdict, rule, reason,
+checks and total. `verify` proves the record was not edited; `replay` proves the record was reasoned correctly.
 
 ## Concurrency
 

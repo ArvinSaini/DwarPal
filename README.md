@@ -9,9 +9,9 @@ Razorpay AI Buildathon 2026 · Track 01: AI Growth & Agentic Commerce · Python 
 AI assistants are starting to shop on people's behalf. NPCI's Unified Agent Protocol, Razorpay's agentic-payments
 pilots and the OpenAI/Stripe Agentic Commerce Protocol all point the same way: merchants will be asked to sell to
 machines. AgentGate is the merchant-side gateway that lets them do it without losing control: an agent-readable
-catalog, an ACP-shaped checkout API, a deterministic policy gate, per-agent spend mandates with reserve/commit/release
-accounting, Razorpay Payment Links with one gated retry, a hash-chained audit ledger, and a bounded cross-sell that
-grows the basket.
+catalog, an ACP-shaped checkout API, a deterministic policy gate with a human review queue, per-agent spend mandates
+with reserve/commit/release accounting, Razorpay Payment Links with one gated retry, gated refunds, a hash-chained
+audit ledger that can be replayed, and a bounded cross-sell that grows the basket.
 
 ## The bar, and where it lives
 
@@ -19,11 +19,11 @@ Track 01 asks: *"Every money action explainable, bounded and gated. Show the aud
 
 | Bar | Where it lives |
 |---|---|
-| **Explainable** | Every checkout runs the 14-rule gate and records every rule with a plain-English detail (`gate.decision` in the ledger, `decision.checks[]` in the API, the session page in the dashboard). A refused cart tells the agent which rule and why. |
-| **Bounded** | Merchant policy (categories sold to agents, max order, stock, blocked SKUs, quantity per line) plus a per-agent mandate (per order, per day, total, categories, expiry). Spend counts reserved *and* committed money, so a pending payment cannot be double-spent. `agentgate/gate.py` is a pure function. |
-| **Gated** | The LLM never decides about money. It proposes catalog metadata (merchant approves), picks cross-sell offers from a pre-filtered candidate set (agent may accept, gate re-judges), and plans the demo buyer. `SessionService.complete` is the only path that creates a Payment Link, and only after ALLOW plus a reservation. |
-| **Audit trail** | Append-only ledger, `sha256(prev_hash + event)`. `ledger verify`, `ledger receipt <session>`, `ledger tamper <seq>` for the camera. |
-| **Failure handled** | Payment fails on the bank page → recorded, gate re-run in retry mode, old link cancelled, fresh link issued; second failure → abandon and release. Also: cap denials at complete, provider errors (release, 502, agent may retry), duplicate webhooks, a cancel Razorpay refuses (final poll; a late capture is never recorded as cancelled), revoked agents, poisoned catalog text. |
+| **Explainable** | Every checkout runs the 15-rule gate and records every rule with a plain-English detail (`gate.decision` in the ledger, `decision.checks[]` in the API, the session page in the dashboard). A refused cart tells the agent which rule and why. Refunds get the same treatment (`refund.decision`). |
+| **Bounded** | Merchant policy (categories sold to agents, max order, stock, blocked SKUs, quantity per line, review threshold, refund window) plus a per-agent mandate (per order, per day, total, categories, expiry). Spend counts reserved *and* committed money, so a pending payment cannot be double-spent. `agentgate/gate.py` is a pure function. |
+| **Gated** | The LLM never decides about money. It proposes catalog metadata (merchant approves), picks cross-sell offers from a pre-filtered candidate set (agent may accept, gate re-judges), and plans the demo buyer. `SessionService.complete` is the only path that creates a Payment Link, and only after ALLOW plus a reservation. Orders above the review threshold wait for a human. Refunds pass rules RF00 to RF04. |
+| **Audit trail** | Append-only ledger, `sha256(prev_hash + event)`. `ledger verify` proves nothing was edited; `ledger replay` re-runs every recorded decision from its recorded input and proves the reasoning; `ledger receipt <session>` exports one session; `ledger tamper <seq>` for the camera. |
+| **Failure handled** | Payment fails on the bank page → recorded, gate re-run in retry mode, old link cancelled, fresh link issued; second failure → abandon and release. Also: cap denials at complete, provider errors (release, 502, agent may retry), duplicate webhooks, a cancel Razorpay refuses (final poll; a late capture is never recorded as cancelled), revoked agents, poisoned catalog text, model outages (fail closed). |
 
 ## Quickstart
 
@@ -41,14 +41,16 @@ python -m agentgate serve                  # API + dashboard at http://127.0.0.1
 Everything above runs offline. Tests never touch the network:
 
 ```powershell
-python -m pytest -q                        # 234 tests, ~20 s
+python -m pytest -q                        # 281 tests, ~25 s
+python -m agentgate eval                   # adversarial gate eval: block rate, false-positive rate
 python -m agentgate metrics --n 50         # honest batch report
+python -m agentgate ledger replay          # re-run every recorded decision and compare
 ```
 
 With Razorpay **test** keys in `.env`: `seed --push` creates the demo products as Razorpay Items, `sync-items`
-pulls them back, and `demo --scenario payfail --payments real` prints a real Payment Link. Pay it on the test
-checkout: Netbanking's mock bank page has **Success** and **Failure** buttons (UPI ids `success@razorpay` /
-`failure@razorpay` appear when UPI is enabled on the account). Live keys are refused.
+pulls them back, `demo --scenario payfail --payments real` prints a real Payment Link, and `refund` calls the real
+refund API. Pay a link on the test checkout: Netbanking's mock bank page has **Success** and **Failure** buttons
+(UPI ids `success@razorpay` / `failure@razorpay` appear when UPI is enabled on the account). Live keys are refused.
 
 With an LLM key (`LLM_*` in `.env`; Gemini's free tier by default, or Groq, NVIDIA NIM, Ollama): `enrich`
 uses the model, cross-sell uses the model, and `demo --planner llm` runs a real tool-calling buyer.
@@ -68,7 +70,8 @@ POST /webhooks/razorpay                           optional; polling covers every
 ```
 
 Auth is `Authorization: Bearer agk_...` (issued per agent by the merchant). `Idempotency-Key` is required on
-create and complete. Errors are `{type, code, message, param?}`; a policy denial carries `rule_id`.
+create and complete. Errors are `{type, code, message, param?}`; a policy denial carries `rule_id`; an order
+waiting for the merchant answers `requires_review`.
 
 ```powershell
 $H = @{ Authorization = "Bearer agk_..."; "Idempotency-Key" = "k1" }
@@ -83,14 +86,15 @@ Invoke-RestMethod -Method Post http://127.0.0.1:8000/agent/v1/checkout_sessions 
 | Catalog enrichment | proposes category, attributes, tags, "recommend when" from raw Razorpay Item text | validates the JSON, parks it as *pending*; a human approves before the gate can see the category |
 | Cross-sell | picks at most two add-ons and a one-line reason | builds the candidate set (in stock, allowed by policy and mandate, priced under the headroom left by every cap); validates the picks; the gate re-judges the cart |
 | Buyer agent (demo client) | plans tool calls from the user's intent; replans after a refusal | executes the calls, wraps catalog text as untrusted, narrates |
-| Gate, mandates, sessions, payments, ledger | nothing | everything |
+| Gate, mandates, sessions, review, refunds, payments, ledger | nothing | everything |
 
 Every model call goes through one OpenAI-compatible client, and every AI component has a deterministic fake, so the
 suite runs offline and the demo works without a paid key. One seed product carries a prompt injection on purpose.
 
 ## The gate
 
-`evaluate(GateInput) -> Decision`: fourteen ordered rules, first failure decides, every rule recorded.
+`evaluate(GateInput) -> Decision`: fifteen ordered rules, first failure decides, every rule recorded. Verdicts are
+ALLOW, DENY, or REVIEW (a human decides).
 
 | Rule | Checks |
 |---|---|
@@ -106,20 +110,28 @@ suite runs offline and the demo works without a paid key. One seed product carri
 | G09_MANDATE_CATEGORY | within the mandate's categories, if any |
 | G10_PER_TXN_CAP | per-transaction cap |
 | G11_DAILY_CAP | today's reserved + committed spend + cart |
-| G12_TOTAL_CAP | all reserved + committed spend + cart |
+| G12_TOTAL_CAP | all reserved + committed spend + cart (refunds give budget back) |
 | G13_SESSION_STATE | replay guard: preview / authoritative / retry each need the right session state |
+| G14_REVIEW_THRESHOLD | above the merchant's review threshold → REVIEW, unless the merchant approved this exact total |
 | G99_GATE_ERROR | guard: an internal error is a DENY with the exception type in the trail; the gate never raises |
+
+Refunds run `evaluate_refund`: RF00 well-formed, RF01 session completed and captured, RF02 within the refundable
+balance, RF03 no duplicate reference, RF04 inside the refund window, same G99 guard.
+
+`python -m agentgate eval` runs 24 hand-built cases (16 abusive, 7 benign boundaries, 1 escalation) through the gate
+with no model: block rate 100%, false-positive rate 0%, 12 distinct rules firing. Report in `docs/gate-eval.md`.
 
 ## Sessions and failure recovery
 
-`not_ready_for_payment → ready_for_payment → payment_pending → completed | canceled`
+`not_ready_for_payment | requires_review → ready_for_payment → payment_pending → completed | canceled`
 
-- **create / update** run the gate in preview mode. A denial keeps the session open with `messages[]`, so the agent can fix the cart.
+- **create / update** run the gate in preview mode. A denial keeps the session open with `messages[]` so the agent can fix the cart. A REVIEW parks it in `requires_review` until the merchant approves or declines in the dashboard.
 - **complete** re-runs the gate authoritatively, reserves the amount on the mandate, creates the Payment Link.
 - **capture** commits the reservation. **Failed first attempt** (or an expired link) re-runs the gate in retry mode, cancels the old link and issues a fresh one; a second failure abandons and releases. A provider error at complete releases and returns 502 so the agent can try again.
 - **cancel** releases; when Razorpay refuses the cancel, one final poll decides honestly between "paid late" and `cancel_failed`.
+- **refund** (merchant, dashboard or CLI) passes RF00 to RF04, calls Razorpay, records `refund.created`, and returns budget against the mandate's total cap.
 
-Full table in `docs/architecture.md`.
+Full tables in `docs/architecture.md`; every threat and its control in `docs/threat-model.md`.
 
 ## Demo scenarios
 
@@ -129,6 +141,8 @@ python -m agentgate demo --scenario refused    # smartwatch: G06_MERCHANT_CATEGO
 python -m agentgate demo --scenario replan     # refused, switches to shoes, pays
 python -m agentgate demo --scenario payfail    # first attempt fails, fresh link, paid on attempt 2
 python -m agentgate demo --scenario crosssell  # accepts the socks offer, pays
+python -m agentgate demo --scenario review     # above the review threshold, merchant approves, pays
+python -m agentgate demo --scenario refund     # paid, then the merchant refunds a short-shipped bottle
 ```
 
 Add `--planner llm` for the real tool-calling buyer and `--payments real` for real test-mode links. Each run
@@ -154,16 +168,17 @@ Nothing here measures a particular language model.
 
 ## Merchant dashboard
 
-`python -m agentgate serve`, then open `/dashboard/login?token=<MERCHANT_TOKEN>`. Pages: overview, products
-(sync from Razorpay, propose enrichment, approve or reject each proposal side by side with the raw text), agents
-(register with caps, key shown once, revoke), policy (JSON editor), sessions (decision trail, payment attempts,
-cancel), ledger (verify, receipt).
+`python -m agentgate serve`, then open `/dashboard/login?token=<MERCHANT_TOKEN>`. Pages: overview (with the review
+queue count), products (sync from Razorpay, propose enrichment, approve or reject each proposal side by side with the
+raw text), agents (register with caps, key shown once, revoke), policy (JSON editor), sessions (decision trail,
+payment attempts, approve/decline review, refund, cancel), ledger (verify, replay, receipt).
 
 ## Honest limitations
 
 - Test mode only. The adapter refuses any key that is not `rzp_test_`.
 - Razorpay has no public delegated-payment token for agents yet, so a human pays the link. "End to end" means the
-  agent does everything up to and after the payment authorisation; `payment_pending` is a documented deviation from ACP.
+  agent does everything up to and after the payment authorisation; `payment_pending` and `requires_review` are
+  documented deviations from ACP.
 - Polling by default (reconciler thread every 3 s, or on `GET`); the webhook is optional and does nothing polling does not.
 - About 30 Payment Links per test account, so tests and metrics use the fake adapter; real calls are for the smoke script and the recorded demo.
 - Bearer keys, not signed AP2-style mandates. One merchant, one process, SQLite.
@@ -174,23 +189,26 @@ cancel), ledger (verify, receipt).
 
 [MandateMesh](https://github.com/PulkitGarg31/mandatemesh) (MIT) is a buyer-side design for the same track: a
 user-signed mandate chain and a pure-function gate bound an untrusted LLM shopper. AgentGate is the merchant-side
-complement: the store's policy, the store's view of each agent's mandate, the store's catalog and cross-sell. No code
-is shared. Protocol context: OpenAI/Stripe ACP, Google AP2 and UCP, NPCI UAP, UPI Circle.
+complement: the store's policy, the store's view of each agent's mandate, the store's catalog and cross-sell, a
+merchant review queue instead of a user step-up, gated refunds and offline replay. No code is shared. Protocol
+context: OpenAI/Stripe ACP, Google AP2 and UCP, NPCI UAP, UPI Circle.
 
 ## Future work
 
-Signed mandates (AP2 verifiable credentials); gated refunds as first-class money actions; a manual-review queue for
-large orders; an MCP server over the same API; a policy compiler (plain English → policy JSON, merchant confirms);
-read-only ledger Q&A; Postgres and multi-merchant; UAP integration when a merchant-facing API exists.
+Signed mandates (AP2 verifiable credentials); an MCP server over the same API; a policy compiler (plain English →
+policy JSON, merchant confirms); read-only ledger Q&A; Postgres and multi-merchant; UAP integration when a
+merchant-facing API exists.
 
 ## Repo map
 
 ```
 agentgate/
-  gate.py            the thesis: 14 rules, pure function, never raises
-  sessions.py        state machine, reservations, retry, abandon, honest cancel
-  mandates.py        per-agent caps; reserve / commit / release
+  gate.py            the thesis: 15 purchase rules + 5 refund rules, pure functions, never raise
+  sessions.py        state machine, reservations, review queue, retry, abandon, honest cancel, refunds
+  mandates.py        per-agent caps; reserve / commit / release; refunds give budget back
   ledger.py          hash chain; verify, receipt, tamper
+  replay.py          re-run every recorded decision from its recorded input
+  evalset.py         adversarial gate eval
   catalog.py         products, seed data, agent feed
   policy.py          merchant policy document
   agents.py          agent keys (hashed at rest)
@@ -198,15 +216,16 @@ agentgate/
   enrichment.py      proposals (pending until approved) + fake / LLM enricher
   llm.py             one OpenAI-compatible client + FakeLLM
   payments.py        payments port + FakePayments
-  razorpay_client.py the only Razorpay SDK importer; items sync/push; webhook signature
+  razorpay_client.py the only Razorpay SDK importer; links, refunds, items sync/push; webhook signature
   api.py             ACP-shaped endpoints, discovery, webhook
   dashboard.py       merchant pages (templates/, static/)
   buyer/             demo buyer: client, planners (scripted, LLM), agent loop
-  demo.py            scenarios
+  demo.py            seven scenarios
   metrics.py         batch report
   cli.py             python -m agentgate ...
-tests/               234 offline tests
-docs/                architecture, protocol mapping, demo script, form answers, metrics report, design spec and plan
+tests/               281 offline tests
+docs/                architecture, threat model, decisions, protocol mapping, demo script, form answers,
+                     gate eval, metrics report, design spec and plan
 scripts/smoke_razorpay.py   one-time real test-mode check
 ```
 
