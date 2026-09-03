@@ -118,8 +118,8 @@ ALLOW, DENY, or REVIEW (a human decides).
 Refunds run `evaluate_refund`: RF00 well-formed, RF01 session completed and captured, RF02 within the refundable
 balance, RF03 no duplicate reference, RF04 inside the refund window, same G99 guard.
 
-`python -m agentgate eval` runs 24 hand-built cases (16 abusive, 7 benign boundaries, 1 escalation) through the gate
-with no model: block rate 100%, false-positive rate 0%, 12 distinct rules firing. Report in `docs/gate-eval.md`.
+`python -m agentgate eval` runs 25 hand-built cases (16 abusive, 8 benign boundaries, 1 escalation to review) through
+the gate with no model: block rate 100%, false-positive rate 0%, 14 distinct rules firing. Report in `docs/gate-eval.md`.
 
 ## Sessions and failure recovery
 

@@ -117,22 +117,35 @@ def run_demo(ctx, scenario: str, planner: str = "scripted", llm=None, wait_s: in
              poll_every_s: int = 3, max_steps: int = 12) -> RunResult:
     if scenario not in SCENARIOS:
         raise ValueError(f"unknown scenario {scenario!r}; choose one of {SCENARIOS}")
-    from fastapi.testclient import TestClient
-
-    from agentgate.api import create_app
-
     agent, key = ctx.agents.register(f"demo-{scenario}")
     ctx.ledger.append("agent.registered", "merchant", {"agent_id": agent.id, "name": agent.name})
     mandate = ctx.mandates.create(agent.id, expires_at=ctx.clock() + 7 * 86400, **MANDATE)
     ctx.ledger.append("mandate.created", "merchant", mandate.to_dict())
     if scenario == "payfail" and isinstance(ctx.payments, FakePayments):
         ctx.payments.outcomes = ["failed", "paid"]
+    previous_policy = None
     if scenario == "review":
         policy = ctx.policies.get()
         if policy.get("review_above_paise", 0) != REVIEW_THRESHOLD_PAISE:
+            previous_policy = policy
             clean = ctx.policies.set(dict(policy, review_above_paise=REVIEW_THRESHOLD_PAISE))
             ctx.ledger.append("policy.updated", "merchant", {"policy": clean, "reason": "demo review scenario"})
-            printer(f"(merchant policy: orders above {rupees(REVIEW_THRESHOLD_PAISE)} now need a human review)")
+            printer(f"(merchant policy: orders above {rupees(REVIEW_THRESHOLD_PAISE)} need a human review for this demo)")
+    try:
+        return _run_demo(ctx, scenario, agent, key, mandate, planner, llm, wait_s, printer, sleep, poll_every_s,
+                         max_steps)
+    finally:
+        if previous_policy is not None:
+            ctx.policies.set(previous_policy)
+            ctx.ledger.append("policy.updated", "merchant",
+                              {"policy": previous_policy, "reason": "demo review scenario ended; threshold restored"})
+
+
+def _run_demo(ctx, scenario, agent, key, mandate, planner, llm, wait_s, printer, sleep, poll_every_s,
+              max_steps) -> RunResult:
+    from fastapi.testclient import TestClient
+
+    from agentgate.api import create_app
 
     printer(f"Scenario: {scenario}")
     printer(f"Intent:   {INTENTS[scenario]}")
