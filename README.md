@@ -152,7 +152,7 @@ registers a fresh demo agent and prints the narrative and the session's ledger t
 
 ## Evaluation
 
-`docs/evaluation.md` is the consolidated evaluation with every figure as a fraction and a percentage: test pass rate,
+`Evaluation.md` at the repo root is the consolidated evaluation with every figure as a fraction and a percentage: test pass rate,
 the gate eval as a detector (recall, precision, false-positive rate, specificity, accuracy, rule coverage), batch
 completion, refusal and abandon rates, explained-denial rate, overrun rate, payment recovery rate, budget release
 rate, cross-sell attach rate and basket uplift, ledger integrity and decision replay agreement. It is regenerated,
@@ -242,10 +242,11 @@ dwarpal/
   metrics.py         batch report
   cli.py             python -m dwarpal ...
 tests/               282 offline tests
-docs/                evaluation, test results, architecture, threat model, decisions, protocol mapping,
+Evaluation.md        consolidated evaluation with computed percentages
+docs/                test results, architecture, threat model, decisions, protocol mapping,
                      demo script, form answers, gate eval, metrics reports, design spec and plan
 scripts/smoke_razorpay.py   one-time real test-mode check
-scripts/make_evaluation.py  regenerates docs/evaluation.md from live runs
+scripts/make_evaluation.py  regenerates Evaluation.md from live runs
 scripts/make_test_report.py regenerates docs/test-results.md from a pytest run
 ```
 
