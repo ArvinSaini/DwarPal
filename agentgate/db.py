@@ -3,8 +3,23 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import threading
 from contextlib import contextmanager
 from importlib import resources
+
+_LOCKS: dict[int, threading.RLock] = {}
+_LOCKS_GUARD = threading.Lock()
+
+
+def _lock_for(conn: sqlite3.Connection) -> threading.RLock:
+    """One re-entrant lock per connection, so request threads and the reconciler thread never interleave
+    transactions on the shared connection."""
+    key = id(conn)
+    with _LOCKS_GUARD:
+        lock = _LOCKS.get(key)
+        if lock is None:
+            lock = _LOCKS[key] = threading.RLock()
+        return lock
 
 
 def connect(path: str) -> sqlite3.Connection:
@@ -23,18 +38,19 @@ def init_db(conn: sqlite3.Connection) -> None:
 
 @contextmanager
 def tx(conn: sqlite3.Connection):
-    """BEGIN/COMMIT/ROLLBACK. Nested use joins the outer transaction instead of failing."""
-    if conn.in_transaction:
-        yield conn
-        return
-    conn.execute("BEGIN")
-    try:
-        yield conn
-    except BaseException:
-        conn.execute("ROLLBACK")
-        raise
-    else:
-        conn.execute("COMMIT")
+    """BEGIN/COMMIT/ROLLBACK under a per-connection lock. Nested use joins the outer transaction."""
+    with _lock_for(conn):
+        if conn.in_transaction:
+            yield conn
+            return
+        conn.execute("BEGIN")
+        try:
+            yield conn
+        except BaseException:
+            conn.execute("ROLLBACK")
+            raise
+        else:
+            conn.execute("COMMIT")
 
 
 def dumps(obj) -> str:
