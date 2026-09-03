@@ -166,9 +166,13 @@ class BuyerAgent:
             return "no_plan"
         if s.get("status") == "payment_pending" and self.wait_for_payment_s > 0:
             deadline = self.clock() + self.wait_for_payment_s
+            # Bound the polls as well as the deadline: when the payments adapter is a fake, sleeping is a no-op,
+            # and a deadline alone would spin against the API until the wall clock caught up.
+            polls_left = max(1, self.wait_for_payment_s // max(1, self.poll_every_s))
             last_attempt = s.get("attempt")
             say(f"Waiting up to {self.wait_for_payment_s}s for the payment to complete...")
-            while self.clock() < deadline:
+            while polls_left > 0 and self.clock() < deadline:
+                polls_left -= 1
                 self.sleep(self.poll_every_s)
                 try:
                     s = self.client.get(s["id"])

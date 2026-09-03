@@ -77,8 +77,8 @@ Show the review queue on the dashboard overview, approve the order, and the agen
 ```powershell
 python -m dwarpal ledger verify
 python -m dwarpal ledger replay        # every recorded decision re-run from its recorded input
-python -m dwarpal ledger tamper 12
-python -m dwarpal ledger verify        # BROKEN at seq 12, exit code 2
+python -m dwarpal ledger tamper          # picks the first event carrying an amount
+python -m dwarpal ledger verify        # BROKEN at that seq, exit code 2
 python -m dwarpal eval                 # 25 adversarial and benign cases, block rate and false positives
 python -m dwarpal metrics --n 50
 ```

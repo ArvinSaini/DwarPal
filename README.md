@@ -6,6 +6,10 @@
 
 > The model proposes. Deterministic code disposes. Only the payments adapter can reach Razorpay.
 
+[![CI](https://github.com/YOUR-GITHUB-USERNAME/dwarpal/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR-GITHUB-USERNAME/dwarpal/actions/workflows/ci.yml)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
 Razorpay AI Buildathon 2026 · Track 01: AI Growth & Agentic Commerce · Python · Razorpay test mode · zero-cost stack
 
 AI assistants are starting to shop on people's behalf. NPCI's Unified Agent Protocol, Razorpay's agentic-payments
@@ -43,7 +47,7 @@ python -m dwarpal serve                  # API + dashboard at http://127.0.0.1:8
 Everything above runs offline. Tests never touch the network:
 
 ```powershell
-python -m pytest -q                        # 282 tests, ~25 s
+python -m pytest -q                        # 286 tests, ~10 s
 python -m dwarpal eval                   # adversarial gate eval: block rate, false-positive rate
 python -m dwarpal metrics --n 50         # honest batch report
 python -m dwarpal ledger replay          # re-run every recorded decision and compare
@@ -241,8 +245,13 @@ dwarpal/
   demo.py            seven scenarios
   metrics.py         batch report
   cli.py             python -m dwarpal ...
-tests/               282 offline tests
+tests/               286 offline tests
 Evaluation.md        consolidated evaluation with computed percentages
+CONTRIBUTING.md      setup, the money-path rule, adding a gate rule, regenerating reports
+SECURITY.md          what is in scope, how to report privately, key handling
+CHANGELOG.md         version history
+Makefile             make test / eval / demos / reports / serve
+.github/             CI (tests, eval, batch invariants, every scenario), issue and PR templates
 docs/                test results, architecture, threat model, decisions, protocol mapping,
                      demo script, form answers, gate eval, metrics reports, design spec and plan
 scripts/smoke_razorpay.py   one-time real test-mode check

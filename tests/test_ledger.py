@@ -87,3 +87,22 @@ def test_receipt_mentions_session_events(ledger):
 def test_receipt_for_unknown_session_raises(ledger):
     with pytest.raises(ValueError):
         ledger.receipt("cs_missing")
+
+
+def test_tamper_without_a_seq_picks_the_first_event_carrying_an_amount(ledger):
+    ledger.append("agent.registered", "merchant", {"agent_id": "agt_1"})       # nothing to tamper
+    ledger.append("session.created", "sessions", {"status": "ready"})          # nothing to tamper
+    ledger.append("mandate.reserved", "sessions", {"amount_paise": 100})       # the first candidate
+    ledger.append("payment.captured", "reconciler", {"amount_paise": 200})
+    assert ledger.first_tamperable_seq() == 3
+    assert ledger.tamper() == 3
+    assert ledger.events()[2].payload["amount_paise"] == 1000
+    r = ledger.verify()
+    assert not r.ok and r.bad_seq == 3
+
+
+def test_tamper_without_a_seq_raises_when_nothing_carries_an_amount(ledger):
+    ledger.append("agent.registered", "merchant", {"agent_id": "agt_1"})
+    assert ledger.first_tamperable_seq() is None
+    with pytest.raises(ValueError):
+        ledger.tamper()
