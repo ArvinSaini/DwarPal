@@ -1,7 +1,7 @@
-"""Regenerate docs/evaluation.md from the actual generators: gate eval, batch metrics (50 and 500 sessions),
+"""Regenerate Evaluation.md (repo root) from the actual generators: gate eval, batch metrics (50 and 500 sessions),
 decision replay, and the test suite. Every number in the document comes from this run.
 
-Usage:  python scripts/make_evaluation.py [--skip-tests] [--out docs/evaluation.md]
+Usage:  python scripts/make_evaluation.py [--skip-tests] [--out Evaluation.md]
 """
 from __future__ import annotations
 
@@ -200,7 +200,7 @@ def build(skip_tests: bool) -> str:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("--out", default=os.path.join("docs", "evaluation.md"))
+    ap.add_argument("--out", default="Evaluation.md")
     ap.add_argument("--skip-tests", action="store_true")
     args = ap.parse_args(argv)
     try:
