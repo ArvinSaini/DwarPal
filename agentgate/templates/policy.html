@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Policy{% endblock %}
+{% block content %}
+<h1>Merchant policy</h1>
+<p class="muted">What any agent may buy from this store. Enforced by the gate on every checkout (rules G04 to G08). Amounts are in paise.</p>
+{% if error %}<div class="error">{{ error }}</div>{% endif %}
+<section class="card">
+  <form method="post" action="/dashboard/policy" class="stack">
+    <textarea name="json" rows="12" class="mono">{{ policy_json }}</textarea>
+    <button type="submit">Save policy</button>
+  </form>
+  <p class="muted">Keys: <code>max_order_paise</code>, <code>allowed_categories</code>, <code>blocked_skus</code>, <code>max_qty_per_line</code>, <code>in_stock_only</code>.</p>
+</section>
+{% endblock %}

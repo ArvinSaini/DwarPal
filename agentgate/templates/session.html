@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Session {{ s.id }}{% endblock %}
+{% block content %}
+<h1>Session <span class="mono">{{ s.id }}</span> <span class="status {{ s.status }}">{{ s.status }}</span></h1>
+<p class="muted">Agent <span class="mono">{{ s.agent_id }}</span> · mandate <span class="mono">{{ s.mandate_id }}</span> · created {{ s.created_at|ts }} · updated {{ s.updated_at|ts }}</p>
+
+<div class="actions">
+  {% if s.status not in ('completed', 'canceled') %}
+  <form method="post" action="/dashboard/sessions/{{ s.id }}/cancel"><button type="submit" class="secondary">Cancel session</button></form>
+  {% endif %}
+  <a class="button secondary" href="/dashboard/ledger/receipt/{{ s.id }}">Receipt (Markdown)</a>
+</div>
+
+<div class="grid2">
+  <section class="card">
+    <h2>Cart</h2>
+    <table>
+      <tr><th>Item</th><th>Qty</th><th>Unit</th><th>Line</th><th>Category</th></tr>
+      {% for l in s.line_items %}
+      <tr><td>{{ l.title }}<br><span class="mono muted">{{ l.id }}</span></td><td class="num">{{ l.quantity }}</td><td class="num">{{ l.unit_price_paise|rupees }}</td><td class="num">{{ l.line_total_paise|rupees }}</td><td>{{ l.category }}</td></tr>
+      {% endfor %}
+      <tr><th colspan="3">Total</th><th class="num">{{ s.totals.total_paise|rupees }}</th><td></td></tr>
+    </table>
+    {% if s.messages %}
+    <h3>Messages to the agent</h3>
+    {% for m in s.messages %}<div class="error"><span class="mono">{{ m.rule_id }}</span> {{ m.text }}</div>{% endfor %}
+    {% endif %}
+    {% if s.offers %}
+    <h3>Cross-sell offers</h3>
+    <ul>{% for o in s.offers %}<li>{{ o.title }} ({{ o.price_paise|rupees }}) <span class="muted">{{ o.reason }}</span></li>{% endfor %}</ul>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <h2>Payment</h2>
+    {% if s.payment %}
+    <table>
+      <tr><th>Status</th><td>{{ s.payment.status }}</td></tr>
+      <tr><th>Link</th><td><a href="{{ s.payment.url }}" target="_blank" rel="noopener">{{ s.payment.url }}</a></td></tr>
+      <tr><th>Amount</th><td>{{ s.payment.amount_paise|rupees }}</td></tr>
+      <tr><th>Attempt</th><td>{{ s.payment.attempt }}</td></tr>
+      <tr><th>Expires</th><td>{{ s.payment.expires_at|ts }}</td></tr>
+    </table>
+    {% else %}<p class="muted">No payment link yet.</p>{% endif %}
+    {% if s.attempts %}
+    <h3>Attempts</h3>
+    <table>
+      <tr><th>#</th><th>Razorpay payment</th><th>Status</th><th>Amount</th><th>Error</th></tr>
+      {% for a in s.attempts %}
+      <tr><td>{{ a.attempt }}</td><td class="mono">{{ a.razorpay_payment_id }}</td><td>{{ a.status }}</td><td class="num">{{ a.amount_paise|rupees }}</td><td class="muted">{{ a.error_code or '' }} {{ a.error_description or '' }}</td></tr>
+      {% endfor %}
+    </table>
+    {% endif %}
+  </section>
+</div>
+
+{% if s.decision %}
+<section class="card">
+  <h2>Last gate decision: {{ s.decision.verdict }} <span class="mono">{{ s.decision.rule_id }}</span></h2>
+  <p>{{ s.decision.reason }}</p>
+  <table>
+    <tr><th>Rule</th><th>Result</th><th>Detail</th></tr>
+    {% for c in s.decision.checks %}
+    <tr class="{{ 'pass' if c.ok else 'fail' }}"><td class="mono">{{ c.rule }}</td><td>{{ 'pass' if c.ok else 'FAIL' }}</td><td>{{ c.detail }}</td></tr>
+    {% endfor %}
+  </table>
+</section>
+{% endif %}
+
+<section class="card">
+  <h2>Ledger trail ({{ trail.events|length }} events, chain {{ 'verified' if trail.verify.ok else 'BROKEN' }})</h2>
+  <table>
+    <tr><th>Seq</th><th>Time</th><th>Type</th><th>Actor</th><th>Payload</th><th>Hash</th></tr>
+    {% for e in trail.events %}
+    <tr><td class="num">{{ e.seq }}</td><td class="muted">{{ e.ts|ts }}</td><td class="mono">{{ e.type }}</td><td class="muted">{{ e.actor }}</td><td class="payload"><details><summary>{{ (e.payload|json)[:90] }}</summary><pre>{{ e.payload|json }}</pre></details></td><td class="mono muted">{{ e.hash[:12] }}</td></tr>
+    {% endfor %}
+  </table>
+</section>
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Products{% endblock %}
+{% block content %}
+<h1>Products</h1>
+<p class="muted">Agents only see fields the merchant approved. Uncategorised products are refused by rule G06 until a proposal is approved.</p>
+<div class="actions">
+  <form method="post" action="/dashboard/products/sync"><button type="submit" {% if not razorpay_configured %}class="secondary" title="Needs Razorpay test keys"{% endif %}>Sync from Razorpay Items</button></form>
+  <form method="post" action="/dashboard/products/enrich"><button type="submit">Propose enrichment for uncategorised products</button></form>
+</div>
+
+{% if pending %}
+<section class="card">
+  <h2>Pending proposals ({{ pending|length }})</h2>
+  <p class="muted">Proposed by the model from the raw product text. Nothing below reaches the gate until you approve it.</p>
+  {% for e, p in pending %}
+  <div class="proposal">
+    <div class="raw">
+      <h3>{{ p.title if p else e.product_id }}</h3>
+      <p class="muted">{{ p.description if p else '' }}</p>
+      <p><span class="mono">{{ e.product_id }}</span> · {{ (p.price_paise if p else 0)|rupees }} · model <span class="mono">{{ e.model }}</span></p>
+    </div>
+    <div class="proposed">
+      <table>
+        <tr><th>Category</th><td><strong>{{ e.proposal.category }}</strong>{% if e.proposal.category not in allowed %} <span class="badge warn">not sold to agents</span>{% endif %}</td></tr>
+        <tr><th>Tags</th><td>{{ e.proposal.tags|join(', ') }}</td></tr>
+        <tr><th>Attributes</th><td>{% for k, v in e.proposal.attributes.items() %}{{ k }}: {{ v }}{{ '; ' if not loop.last }}{% endfor %}</td></tr>
+        <tr><th>Recommend when</th><td>{{ e.proposal.recommend_when }}</td></tr>
+      </table>
+      <div class="actions">
+        <form method="post" action="/dashboard/enrichments/{{ e.id }}/approve"><input type="hidden" name="enrichment_id" value="{{ e.id }}"><button type="submit">Approve</button></form>
+        <form method="post" action="/dashboard/enrichments/{{ e.id }}/reject"><input type="hidden" name="enrichment_id" value="{{ e.id }}"><button type="submit" class="secondary">Reject</button></form>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</section>
+{% endif %}
+
+<section class="card">
+  <h2>Catalog ({{ products|length }})</h2>
+  <table>
+    <tr><th>Id</th><th>Title</th><th>Price</th><th>Category</th><th>Stock</th><th>Tags</th><th>Source</th></tr>
+    {% for p in products %}
+    <tr>
+      <td class="mono">{{ p.id }}</td>
+      <td>{{ p.title }}</td>
+      <td class="num">{{ p.price_paise|rupees }}</td>
+      <td>{% if p.category %}{{ p.category }}{% if p.category not in allowed %} <span class="badge warn">not sold to agents</span>{% endif %}{% else %}<span class="badge warn">uncategorised</span>{% endif %}</td>
+      <td>{{ p.availability }}</td>
+      <td class="muted">{{ p.tags|join(', ') }}</td>
+      <td class="muted">{{ p.source }}{% if p.razorpay_item_id %} <span class="mono">{{ p.razorpay_item_id }}</span>{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
+{% endblock %}
