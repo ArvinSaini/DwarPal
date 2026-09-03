@@ -1,6 +1,6 @@
 import pytest
 
-from agentgate.catalog import SEED_PRODUCTS, Catalog, Product, seed
+from dwarpal.catalog import SEED_PRODUCTS, Catalog, Product, seed
 
 
 @pytest.fixture

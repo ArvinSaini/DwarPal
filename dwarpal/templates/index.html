@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Overview{% endblock %}
+{% block content %}
+<h1>{{ merchant_name }} is open to AI buyers</h1>
+<div class="stats">
+  <div class="stat"><div class="n">{{ product_count }}</div><div class="l">products</div></div>
+  <div class="stat"><div class="n">{{ agents|length }}</div><div class="l">registered agents</div></div>
+  <div class="stat"><div class="n">{{ pending_count }}</div><div class="l">enrichment proposals waiting</div></div>
+  <div class="stat"><div class="n">{{ session_count }}</div><div class="l">checkout sessions</div></div>
+  <div class="stat {{ 'warnbox' if counts.get('requires_review') else '' }}"><div class="n">{{ counts.get('requires_review', 0) }}</div><div class="l">orders awaiting review</div></div>
+  <div class="stat {{ 'good' if verify.ok else 'bad' }}">
+    <div class="n">{{ 'verified' if verify.ok else 'BROKEN' }}</div>
+    <div class="l">ledger chain, {{ verify.count }} events</div>
+  </div>
+</div>
+
+<div class="grid2">
+  <section class="card">
+    <h2>Sessions by status</h2>
+    <table>
+      {% for k, v in counts.items() %}<tr><td><span class="status {{ k }}">{{ k }}</span></td><td class="num">{{ v }}</td></tr>{% endfor %}
+      {% if not counts %}<tr><td class="muted">No sessions yet. Run <code>python -m dwarpal demo --scenario happy</code>.</td></tr>{% endif %}
+    </table>
+  </section>
+  <section class="card">
+    <h2>Merchant policy</h2>
+    <table>
+      <tr><th>Categories sold to agents</th><td>{{ policy.allowed_categories|join(', ') }}</td></tr>
+      <tr><th>Max order</th><td>{{ policy.max_order_paise|rupees }}</td></tr>
+      <tr><th>Max quantity per line</th><td>{{ policy.max_qty_per_line }}</td></tr>
+      <tr><th>In-stock only</th><td>{{ 'yes' if policy.in_stock_only else 'no' }}</td></tr>
+      <tr><th>Blocked SKUs</th><td>{{ policy.blocked_skus|join(', ') or 'none' }}</td></tr>
+    </table>
+    <p><a href="/dashboard/policy">Edit policy</a></p>
+  </section>
+</div>
+
+<section class="card">
+  <h2>Recent sessions</h2>
+  <table>
+    <tr><th>Session</th><th>Agent</th><th>Status</th><th>Total</th><th>Last decision</th><th>Updated</th></tr>
+    {% for s in sessions %}
+    <tr>
+      <td><a href="/dashboard/sessions/{{ s.id }}">{{ s.id }}</a></td>
+      <td class="mono">{{ s.agent_id }}</td>
+      <td><span class="status {{ s.status }}">{{ s.status }}</span></td>
+      <td class="num">{{ s.totals.total_paise|rupees }}</td>
+      <td>{% if s.decision %}{{ s.decision.verdict }} <span class="mono">{{ s.decision.rule_id }}</span>{% endif %}</td>
+      <td class="muted">{{ s.updated_at|ts }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
+<p class="muted">Ledger head <span class="mono">{{ head[:16] }}…</span></p>
+{% endblock %}

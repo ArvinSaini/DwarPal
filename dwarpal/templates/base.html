@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Dwarpal{% endblock %} · {{ merchant_name }}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">Dwarpal <span class="muted">for {{ merchant_name }}</span></div>
+  <nav>
+    <a href="/dashboard/" class="{{ 'active' if path == '/dashboard/' else '' }}">Overview</a>
+    <a href="/dashboard/products" class="{{ 'active' if path.startswith('/dashboard/products') else '' }}">Products</a>
+    <a href="/dashboard/agents" class="{{ 'active' if path.startswith('/dashboard/agents') else '' }}">Agents</a>
+    <a href="/dashboard/policy" class="{{ 'active' if path.startswith('/dashboard/policy') else '' }}">Policy</a>
+    <a href="/dashboard/sessions" class="{{ 'active' if path.startswith('/dashboard/sessions') else '' }}">Sessions</a>
+    <a href="/dashboard/ledger" class="{{ 'active' if path.startswith('/dashboard/ledger') else '' }}">Ledger</a>
+    <a href="/dashboard/logout" class="muted">Log out</a>
+  </nav>
+  <div class="modes">
+    <span class="badge {{ 'ok' if payments_mode == 'razorpay' else 'warn' }}">payments: {{ payments_mode }}</span>
+    <span class="badge {{ 'ok' if llm_configured else 'warn' }}">model: {{ 'configured' if llm_configured else 'fake' }}</span>
+  </div>
+</header>
+<main>
+  {% if msg %}<div class="flash">{{ msg }}</div>{% endif %}
+  {% block content %}{% endblock %}
+</main>
+<footer class="muted">Every money action explainable, bounded, gated and audited. Razorpay test mode only.</footer>
+</body>
+</html>

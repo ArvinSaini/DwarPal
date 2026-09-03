@@ -1,9 +1,9 @@
 import pytest
 
-from agentgate.catalog import Catalog, Product, seed
-from agentgate.ledger import Ledger
-from agentgate.payments import PaymentRequest, PaymentsError
-from agentgate.razorpay_client import (MIN_LINK_TTL_S, RazorpayPayments, push_items, sync_items,
+from dwarpal.catalog import Catalog, Product, seed
+from dwarpal.ledger import Ledger
+from dwarpal.payments import PaymentRequest, PaymentsError
+from dwarpal.razorpay_client import (MIN_LINK_TTL_S, RazorpayPayments, push_items, sync_items,
                                        verify_webhook_signature)
 
 NOW = 1_756_900_000

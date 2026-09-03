@@ -1,6 +1,6 @@
 import pytest
 
-from agentgate.payments import FakePayments, PaymentRequest, PaymentsError
+from dwarpal.payments import FakePayments, PaymentRequest, PaymentsError
 
 
 def req(amount: int = 100, attempt: int = 1) -> PaymentRequest:

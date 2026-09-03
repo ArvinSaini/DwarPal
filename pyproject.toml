@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "agentgate"
+name = "dwarpal"
 version = "0.1.0"
 description = "Makes a Razorpay merchant sellable to AI buyer agents, safely."
 readme = "README.md"
@@ -25,10 +25,10 @@ dependencies = [
 dev = ["pytest>=8"]
 
 [tool.setuptools.packages.find]
-include = ["agentgate*"]
+include = ["dwarpal*"]
 
 [tool.setuptools.package-data]
-agentgate = ["schema.sql", "templates/*.html", "static/*.css"]
+dwarpal = ["schema.sql", "templates/*.html", "static/*.css"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -1,4 +1,4 @@
-from agentgate.evalset import CASES, EvalResult, render_markdown, run_eval
+from dwarpal.evalset import CASES, EvalResult, render_markdown, run_eval
 
 
 def test_every_case_has_the_expected_verdict_and_rule():

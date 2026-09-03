@@ -1,9 +1,9 @@
 import pytest
 
-from agentgate.catalog import Catalog, seed
-from agentgate.enrichment import EnrichmentStore, FakeEnricher, LLMEnricher, Proposal, validate_proposal
-from agentgate.ledger import Ledger
-from agentgate.llm import FakeLLM
+from dwarpal.catalog import Catalog, seed
+from dwarpal.enrichment import EnrichmentStore, FakeEnricher, LLMEnricher, Proposal, validate_proposal
+from dwarpal.ledger import Ledger
+from dwarpal.llm import FakeLLM
 
 ALLOWED = ["footwear", "apparel", "accessories", "fitness"]
 

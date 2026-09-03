@@ -1,6 +1,6 @@
 import pytest
 
-from agentgate.sessions import CANCELED, COMPLETED, NOT_READY, PENDING, READY, SessionError
+from dwarpal.sessions import CANCELED, COMPLETED, NOT_READY, PENDING, READY, SessionError
 
 SHOES = [{"id": "prod_shoes", "quantity": 1}]
 WATCH = [{"id": "prod_watch", "quantity": 1}]

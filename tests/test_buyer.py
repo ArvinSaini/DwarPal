@@ -1,9 +1,9 @@
 import pytest
 
-from agentgate.buyer.agent import BuyerAgent
-from agentgate.buyer.client import GateAPIError, GateClient
-from agentgate.buyer.planner import TOOLS, Action, LLMPlanner, ScriptedPlanner
-from agentgate.llm import FakeLLM, LLMError
+from dwarpal.buyer.agent import BuyerAgent
+from dwarpal.buyer.client import GateAPIError, GateClient
+from dwarpal.buyer.planner import TOOLS, Action, LLMPlanner, ScriptedPlanner
+from dwarpal.llm import FakeLLM, LLMError
 from tests.conftest import make_client
 
 SHOES = [{"id": "prod_shoes", "quantity": 1}]
