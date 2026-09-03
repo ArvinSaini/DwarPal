@@ -152,21 +152,25 @@ registers a fresh demo agent and prints the narrative and the session's ledger t
 
 ## Metrics (scripted batch, fake payments)
 
-From `python -m dwarpal metrics --n 50 --seed 7` (full report in `docs/metrics-2026-09-03.md`):
+The batch generates its own test data: three agents with weekly mandates (renewed on expiry), a seeded mix of
+allowed carts, refused carts, failed first payments and abandoned payments, one order an hour, against the real gate
+and state machine with fake payments. Reports are written as Markdown: `docs/metrics-2026-09-03.md` (50 sessions)
+and `docs/metrics-500-sessions.md` (500 sessions).
 
-| Metric | Value |
-|---|---|
-| Outcomes | 33 completed, 15 refused, 2 canceled |
-| Denials by rule | G03 2, G04 4, G06 2, G07 1, G10 1, G11 5 (all explained) |
-| Mandate overruns (reserved + committed vs per-order, daily, total caps) | **0** |
-| Failed first attempts retried with a fresh link / recovered on attempt 2 | 6 / 4 |
-| Reservations released after abandon | 2 |
-| Cross-sell: sessions offered / accepted / attach rate | 34 / 21 / **62%** |
-| Ledger chain | verified |
+| Metric | 50 sessions (seed 7) | 500 sessions (seed 11) |
+|---|---|---|
+| Outcomes | 41 completed, 7 refused, 2 canceled | 308 completed, 174 refused, 18 canceled |
+| Denials by rule | G03 2, G04 2, G06 2, G10 1 | G03 22, G04 24, G06 25, G07 23, G10 29, G12 51 |
+| Mandate overruns (reserved + committed vs per-order, daily, total caps) | **0** | **0** |
+| Failed first attempts retried with a fresh link / recovered on attempt 2 | 7 / 5 | 84 / 66 |
+| Reservations released after abandon | 2 | 18 |
+| Cross-sell: sessions offered / accepted / attach rate | 43 / 27 / **63%** | 303 / 165 / **54%** |
+| Ledger chain | verified, 550 events | verified, 4,341 events |
 
 These are scripted inputs against deterministic code, so zero overruns and fully explained denials are expected by
-construction. The evidence is that the failure paths really fire and the accounting holds across many sessions.
-Nothing here measures a particular language model.
+construction. The evidence is that the failure paths really fire and the accounting holds across many sessions. The
+G12 denials in the large run are the small-budget agent running its weekly total down, which is the rule doing its
+job. Nothing here measures a particular language model.
 
 ## Merchant dashboard
 

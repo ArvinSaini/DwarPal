@@ -1,28 +1,27 @@
 # Dwarpal batch metrics
 
-500 sessions, seed 11, 3 agents, scripted carts against the real gate and state machine with fake payments. Generated 2026-09-03 18:19 UTC.
+500 sessions, seed 11, 3 agents, scripted carts against the real gate and state machine with fake payments. Generated 2026-09-03 18:21 UTC.
 
 ## Outcomes
 
 | Outcome | Sessions |
 |---|---|
-| canceled | 1 |
-| completed | 47 |
-| refused | 452 |
+| canceled | 18 |
+| completed | 308 |
+| refused | 174 |
 
-Intended scenario mix: abandoned 18, allowed_paid 285, payfail_then_paid 73, refused 124.
+Intended scenario mix: abandoned 22, allowed_paid 281, payfail_then_paid 74, refused 123.
 
 ## Denials by rule (every denial names its rule)
 
 | Rule | Count |
 |---|---|
-| G03_ITEMS_KNOWN | 19 |
-| G04_IN_STOCK | 25 |
-| G06_MERCHANT_CATEGORY | 27 |
-| G07_QTY_PER_LINE | 25 |
-| G10_PER_TXN_CAP | 28 |
-| G11_DAILY_CAP | 269 |
-| G12_TOTAL_CAP | 59 |
+| G03_ITEMS_KNOWN | 22 |
+| G04_IN_STOCK | 24 |
+| G06_MERCHANT_CATEGORY | 25 |
+| G07_QTY_PER_LINE | 23 |
+| G10_PER_TXN_CAP | 29 |
+| G12_TOTAL_CAP | 51 |
 
 ## Bounded
 
@@ -30,22 +29,22 @@ Intended scenario mix: abandoned 18, allowed_paid 285, payfail_then_paid 73, ref
 
 ## Failure recovery
 
-- First payment attempt failed and a fresh link was issued: 10
-- Of those, paid on the second attempt: 9
-- Sessions whose reserved budget was released (cancel, abandon, provider error): 1
+- First payment attempt failed and a fresh link was issued: 84
+- Of those, paid on the second attempt: 66
+- Sessions whose reserved budget was released (cancel, abandon, provider error): 18
 
 ## Cross-sell
 
-- Sessions with an offer: 41
-- Offers accepted: 24
-- Attach rate: **58%**
-- Average completed basket with an accepted offer: INR 2,918.20
-- Average completed basket without: INR 1,919.82
-- Completed revenue: INR 114,193.00
+- Sessions with an offer: 303
+- Offers accepted: 165
+- Attach rate: **55%**
+- Average completed basket with an accepted offer: INR 2,828.39
+- Average completed basket without: INR 2,020.12
+- Completed revenue: INR 746,672.00
 
 ## Audit
 
-- Ledger chain: verified (1474 events)
+- Ledger chain: verified (4341 events)
 
 ## What this does and does not prove
 
