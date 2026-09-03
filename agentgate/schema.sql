@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS sessions (
   id TEXT PRIMARY KEY,
   agent_id TEXT NOT NULL REFERENCES agents(id),
   mandate_id TEXT,
-  status TEXT NOT NULL CHECK (status IN ('not_ready_for_payment', 'ready_for_payment', 'payment_pending', 'completed', 'canceled')),
+  status TEXT NOT NULL CHECK (status IN ('not_ready_for_payment', 'requires_review', 'ready_for_payment', 'payment_pending', 'completed', 'canceled')),
   line_items TEXT NOT NULL DEFAULT '[]',
   totals TEXT NOT NULL DEFAULT '{}',
   messages TEXT NOT NULL DEFAULT '[]',
@@ -93,6 +93,17 @@ CREATE TABLE IF NOT EXISTS reservations (
 );
 CREATE INDEX IF NOT EXISTS idx_reservations_mandate ON reservations(mandate_id, state);
 CREATE INDEX IF NOT EXISTS idx_reservations_session ON reservations(session_id);
+
+CREATE TABLE IF NOT EXISTS reviews (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL,
+  total_paise INTEGER NOT NULL,
+  decision TEXT NOT NULL CHECK (decision IN ('approved', 'declined')),
+  note TEXT NOT NULL DEFAULT '',
+  actor TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_reviews_session ON reviews(session_id);
 
 CREATE TABLE IF NOT EXISTS payments (
   id TEXT PRIMARY KEY,

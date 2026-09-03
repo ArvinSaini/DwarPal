@@ -136,3 +136,22 @@ def test_eval_prints_table(run, tmp_path):
     out_file = tmp_path / "eval.md"
     code, out = run("eval", "--out", str(out_file))
     assert code == 0 and "Block rate" in out and "100%" in out and out_file.exists()
+
+
+def test_review_commands(run, tmp_path):
+    run("init")
+    run("seed")
+    policy = tmp_path / "p.json"
+    policy.write_text(json.dumps({"max_order_paise": 500000, "allowed_categories": ["footwear", "apparel",
+                                  "accessories", "fitness"], "blocked_skus": [], "max_qty_per_line": 5,
+                                  "in_stock_only": True, "review_above_paise": 200000}), encoding="utf-8")
+    assert run("policy", "set", str(policy))[0] == 0
+    code, out = run("demo", "--scenario", "happy", "--payments", "fake", "--wait", "0")
+    assert code == 0 and "Outcome: requires_review" in out
+    code, out = run("review", "list")
+    assert code == 0 and "cs_" in out
+    sid = [w for w in out.split() if w.startswith("cs_")][0]
+    code, out = run("review", "approve", sid, "--note", "fine")
+    assert code == 0 and "ready_for_payment" in out
+    code, out = run("review", "decline", sid)
+    assert code == 1

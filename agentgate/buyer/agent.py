@@ -143,6 +143,9 @@ class BuyerAgent:
         if status == "not_ready_for_payment":
             msg = (s.get("messages") or [{}])[0]
             say(f"{verb} session {s['id']}: refused by the gate, rule {msg.get('rule_id')}: {msg.get('text')}")
+        elif status == "requires_review":
+            say(f"{verb} session {s['id']}: {total} is above the store's review threshold; waiting for the merchant "
+                f"to approve")
         elif status == "ready_for_payment":
             offers = s.get("offers") or []
             extra = (", offers: " + ", ".join(f"{o['title']} ({rupees(o['price_paise'])})" for o in offers)) if offers else ""
@@ -189,6 +192,8 @@ class BuyerAgent:
             return "payment_pending"
         if status == "not_ready_for_payment":
             return "refused"
+        if status == "requires_review":
+            return "requires_review"
         if status == "canceled":
             return "canceled"
         return "incomplete"

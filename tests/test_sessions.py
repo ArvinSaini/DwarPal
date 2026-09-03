@@ -324,3 +324,76 @@ def test_list_get_any_and_merchant_cancel(world):
     assert world.sessions.get_any("cs_nope") is None
     assert world.sessions.cancel_by_merchant(s["id"])["status"] == CANCELED
     assert types(world, s["id"])[-1] == "session.canceled"
+
+
+# -- merchant review queue ------------------------------------------------------------------------
+
+REQUIRES_REVIEW = "requires_review"
+
+
+def with_review(world, threshold=200000):
+    world.policies.set(dict(world.policies.get(), review_above_paise=threshold))
+
+
+def test_review_flow_create_approve_complete(world):
+    with_review(world)
+    s = create(world)
+    assert s["status"] == REQUIRES_REVIEW and s["offers"] == []
+    assert s["decision"]["verdict"] == "REVIEW" and s["decision"]["rule_id"] == "G14_REVIEW_THRESHOLD"
+    assert s["messages"][0]["code"] == "requires_review" and s["messages"][0]["type"] == "info"
+    assert types(world, s["id"]) == ["session.created", "gate.decision", "review.requested"]
+    with pytest.raises(SessionError) as ei:
+        world.sessions.complete(world.agent, s["id"], "c1")
+    assert ei.value.status_code == 409 and ei.value.code == "requires_review"
+    assert [r["id"] for r in world.sessions.pending_reviews()] == [s["id"]]
+    a = world.sessions.approve_review(s["id"], "looks fine")
+    assert a["status"] == READY and a["decision"]["verdict"] == "ALLOW" and a["offers"] and a["messages"] == []
+    assert types(world, s["id"])[-3:] == ["review.approved", "gate.decision", "crosssell.offered"]
+    assert world.sessions.pending_reviews() == []
+    assert world.sessions.complete(world.agent, s["id"], "c1")["status"] == PENDING
+
+
+def test_review_approval_is_tied_to_the_total(world):
+    with_review(world)
+    s = create(world)
+    world.sessions.approve_review(s["id"], "ok")
+    bigger = world.sessions.update(world.agent, s["id"], SHOES + [{"id": "prod_bottle", "quantity": 1}])
+    assert bigger["status"] == REQUIRES_REVIEW
+    world.sessions.approve_review(s["id"], "ok again")
+    assert world.sessions.get(world.agent, s["id"])["status"] == READY
+    smaller = world.sessions.update(world.agent, s["id"], [{"id": "prod_socks", "quantity": 1}])
+    assert smaller["status"] == READY  # below the threshold: no review needed
+
+
+def test_review_decline_lets_the_agent_change_the_cart(world):
+    with_review(world)
+    s = create(world)
+    d = world.sessions.decline_review(s["id"], "too big for a new agent")
+    assert d["status"] == NOT_READY and d["messages"][0]["code"] == "review_declined"
+    assert "too big" in d["messages"][0]["text"]
+    assert types(world, s["id"])[-1] == "review.declined"
+    assert world.sessions.update(world.agent, s["id"], [{"id": "prod_socks", "quantity": 1}])["status"] == READY
+
+
+def test_review_required_at_complete_when_policy_changes(world):
+    s = create(world)
+    assert s["status"] == READY
+    with_review(world)
+    with pytest.raises(SessionError) as ei:
+        world.sessions.complete(world.agent, s["id"], "c1")
+    assert ei.value.status_code == 409 and ei.value.code == "requires_review"
+    g = world.sessions.get(world.agent, s["id"])
+    assert g["status"] == REQUIRES_REVIEW and world.mandates.open_for(s["id"]) is None
+    assert types(world, s["id"])[-1] == "review.requested"
+    world.sessions.approve_review(s["id"], "fine")
+    assert world.sessions.complete(world.agent, s["id"], "c2")["status"] == PENDING
+
+
+def test_approve_or_decline_in_wrong_state(world):
+    s = create(world)
+    with pytest.raises(SessionError) as ei:
+        world.sessions.approve_review(s["id"], "x")
+    assert ei.value.status_code == 409 and ei.value.code == "wrong_state"
+    with pytest.raises(SessionError) as ei:
+        world.sessions.decline_review("cs_nope", "x")
+    assert ei.value.status_code == 404

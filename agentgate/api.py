@@ -18,7 +18,7 @@ from agentgate.context import AppContext
 from agentgate.db import tx
 from agentgate.ledger import canonical
 from agentgate.razorpay_client import verify_webhook_signature
-from agentgate.sessions import CANCELED, COMPLETED, NOT_READY, PENDING, READY, SessionError
+from agentgate.sessions import CANCELED, COMPLETED, NOT_READY, PENDING, READY, REQUIRES_REVIEW, SessionError
 
 API_VERSION = "2026-09-03"
 ApiError = SessionError  # same wire shape: {type, code, message, param?}
@@ -93,11 +93,14 @@ def create_app(ctx: AppContext) -> FastAPI:
             "feed_url": f"{base}/agent/v1/products",
             "checkout_url": f"{base}/agent/v1/checkout_sessions",
             "payment_rails": ["razorpay:payment_link"],
-            "session_statuses": [NOT_READY, READY, PENDING, COMPLETED, CANCELED],
+            "session_statuses": [NOT_READY, REQUIRES_REVIEW, READY, PENDING, COMPLETED, CANCELED],
             "policy": {"allowed_categories": policy["allowed_categories"], "max_order_paise": policy["max_order_paise"],
-                       "max_qty_per_line": policy["max_qty_per_line"]},
+                       "max_qty_per_line": policy["max_qty_per_line"],
+                       "review_above_paise": policy.get("review_above_paise", 0)},
             "deviations_from_acp": [
                 "payment_pending: the payer completes a Razorpay Payment Link; complete does not charge synchronously",
+                "requires_review: orders above the merchant's review threshold wait for a human; poll until "
+                "ready_for_payment or change the cart",
                 "agents authenticate with a merchant-issued bearer key; no shared payment token",
             ],
             "docs": f"{base}/docs",

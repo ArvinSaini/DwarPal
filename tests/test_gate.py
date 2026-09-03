@@ -14,7 +14,8 @@ POLICY = {"max_order_paise": 500000, "allowed_categories": ["footwear", "apparel
 NOW = 1_756_900_000
 RULES = ["G00_WELL_FORMED", "G01_AGENT_ACTIVE", "G02_MANDATE_ACTIVE", "G03_ITEMS_KNOWN", "G04_IN_STOCK",
          "G05_SKU_NOT_BLOCKED", "G06_MERCHANT_CATEGORY", "G07_QTY_PER_LINE", "G08_ORDER_MAX",
-         "G09_MANDATE_CATEGORY", "G10_PER_TXN_CAP", "G11_DAILY_CAP", "G12_TOTAL_CAP", "G13_SESSION_STATE"]
+         "G09_MANDATE_CATEGORY", "G10_PER_TXN_CAP", "G11_DAILY_CAP", "G12_TOTAL_CAP", "G13_SESSION_STATE",
+         "G14_REVIEW_THRESHOLD"]
 
 
 def mandate(**over) -> GateMandate:
@@ -48,14 +49,14 @@ def test_happy_allow_has_full_trail():
     assert [c.rule for c in d.checks] == RULES
     assert all(c.ok for c in d.checks)
     assert d.lines[0].title == "Trail Running Shoes" and d.lines[0].line_total_paise == 249900
-    assert "14 checks passed" in d.reason
+    assert "15 checks passed" in d.reason
 
 
 def test_decision_serialises_to_json():
     d = evaluate(gi(items=[{"id": "prod_shoes", "quantity": 1}, {"id": "prod_bottle", "quantity": 2}]))
     doc = json.loads(json.dumps(d.to_dict()))
     assert doc["verdict"] == "ALLOW" and doc["total_paise"] == 249900 + 2 * 69900
-    assert len(doc["checks"]) == 14 and doc["lines"][1]["quantity"] == 2
+    assert len(doc["checks"]) == 15 and doc["lines"][1]["quantity"] == 2
 
 
 def test_details_mention_rupee_amounts():
@@ -205,3 +206,18 @@ def test_store_adapters():
     assert m.categories == ("footwear",) and m.total_cap_paise == 3
     assert gate_mandate(None) is None
     assert gate_agent(None) is None
+
+
+# -- G14 review threshold -------------------------------------------------------------------------
+
+def test_g14_review_threshold_and_merchant_approval():
+    from agentgate.gate import REVIEW
+    policy = dict(POLICY, review_above_paise=200000)
+    d = evaluate(gi(policy=policy))
+    assert d.verdict == REVIEW and d.rule_id == "G14_REVIEW_THRESHOLD" and not d.allowed and d.needs_review
+    assert d.checks[-1].rule == "G14_REVIEW_THRESHOLD" and "INR 2,499.00" in d.reason and "INR 2,000.00" in d.reason
+    assert d.total_paise == 249900 and d.lines
+    assert evaluate(gi(policy=policy, merchant_approved=True)).allowed
+    assert evaluate(gi(policy=dict(POLICY, review_above_paise=249900))).allowed
+    assert evaluate(gi(policy=dict(POLICY, review_above_paise=0))).allowed
+    assert evaluate(gi(policy=policy, mode=PREVIEW, session_status="requires_review")).verdict == REVIEW

@@ -7,6 +7,7 @@
   <div class="stat"><div class="n">{{ agents|length }}</div><div class="l">registered agents</div></div>
   <div class="stat"><div class="n">{{ pending_count }}</div><div class="l">enrichment proposals waiting</div></div>
   <div class="stat"><div class="n">{{ session_count }}</div><div class="l">checkout sessions</div></div>
+  <div class="stat {{ 'warnbox' if counts.get('requires_review') else '' }}"><div class="n">{{ counts.get('requires_review', 0) }}</div><div class="l">orders awaiting review</div></div>
   <div class="stat {{ 'good' if verify.ok else 'bad' }}">
     <div class="n">{{ 'verified' if verify.ok else 'BROKEN' }}</div>
     <div class="l">ledger chain, {{ verify.count }} events</div>

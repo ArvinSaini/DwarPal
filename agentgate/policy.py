@@ -12,8 +12,11 @@ DEFAULT_POLICY: dict = {
     "blocked_skus": [],
     "max_qty_per_line": 5,
     "in_stock_only": True,
+    "review_above_paise": 0,  # 0 = never ask the merchant; otherwise orders above this wait for approval
 }
-POLICY_KEYS = tuple(DEFAULT_POLICY)
+REQUIRED_KEYS = ("max_order_paise", "allowed_categories", "blocked_skus", "max_qty_per_line", "in_stock_only")
+OPTIONAL_KEYS = ("review_above_paise",)
+POLICY_KEYS = REQUIRED_KEYS + OPTIONAL_KEYS
 
 
 class PolicyError(ValueError):
@@ -38,7 +41,7 @@ def validate_policy(doc) -> dict:
     unknown = set(doc) - set(POLICY_KEYS)
     if unknown:
         raise PolicyError(f"unknown policy keys: {sorted(unknown)}")
-    missing = set(POLICY_KEYS) - set(doc)
+    missing = set(REQUIRED_KEYS) - set(doc)
     if missing:
         raise PolicyError(f"missing policy keys: {sorted(missing)}")
     mo = doc["max_order_paise"]
@@ -49,12 +52,16 @@ def validate_policy(doc) -> dict:
         raise PolicyError("max_qty_per_line must be an integer >= 1")
     if type(doc["in_stock_only"]) is not bool:
         raise PolicyError("in_stock_only must be true or false")
+    review = doc.get("review_above_paise", 0)
+    if type(review) is not int or review < 0:
+        raise PolicyError("review_above_paise must be a non-negative integer (paise); 0 disables review")
     return {
         "max_order_paise": mo,
         "allowed_categories": _str_list(doc["allowed_categories"], "allowed_categories"),
         "blocked_skus": _str_list(doc["blocked_skus"], "blocked_skus"),
         "max_qty_per_line": mq,
         "in_stock_only": doc["in_stock_only"],
+        "review_above_paise": review,
     }
 
 

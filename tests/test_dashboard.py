@@ -114,3 +114,18 @@ def test_ledger_page_verify_tamper_and_receipt(app_client, world):
     r = app_client.post("/dashboard/ledger/verify")
     assert "BROKEN" in r.text
     assert app_client.get("/dashboard/ledger/receipt/cs_nope").status_code == 404
+
+
+def test_review_queue_in_dashboard(app_client, world):
+    login(app_client)
+    world.policies.set(dict(world.policies.get(), review_above_paise=200000))
+    s = app_client.post("/agent/v1/checkout_sessions", json={"items": SHOES}, headers={"Idempotency-Key": "k"}).json()
+    r = app_client.get("/dashboard/")
+    assert "requires_review" in r.text and "awaiting review" in r.text
+    r = app_client.get(f"/dashboard/sessions/{s['id']}")
+    assert "Approve" in r.text and "Decline" in r.text and "G14_REVIEW_THRESHOLD" in r.text
+    r = app_client.post(f"/dashboard/sessions/{s['id']}/approve", data={"note": "fine"}, follow_redirects=False)
+    assert r.status_code == 303
+    assert world.sessions.get_any(s["id"])["status"] == "ready_for_payment"
+    r = app_client.post(f"/dashboard/sessions/{s['id']}/decline", data={"note": "x"}, follow_redirects=False)
+    assert r.status_code == 303 and ("wrong" in r.headers["location"] or "is%20" in r.headers["location"])
