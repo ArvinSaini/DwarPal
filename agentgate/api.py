@@ -6,7 +6,6 @@ and an extra ``payment_pending`` status because the payer completes a Razorpay P
 from __future__ import annotations
 
 import hashlib
-import hmac
 import json
 import sqlite3
 
@@ -18,15 +17,11 @@ from agentgate import __version__
 from agentgate.context import AppContext
 from agentgate.db import tx
 from agentgate.ledger import canonical
+from agentgate.razorpay_client import verify_webhook_signature
 from agentgate.sessions import CANCELED, COMPLETED, NOT_READY, PENDING, READY, SessionError
 
 API_VERSION = "2026-09-03"
 ApiError = SessionError  # same wire shape: {type, code, message, param?}
-
-
-def verify_webhook_signature(body: bytes, signature: str, secret: str) -> bool:
-    expected = hmac.new(secret.encode("utf-8"), body, hashlib.sha256).hexdigest()
-    return bool(signature) and hmac.compare_digest(expected, signature.strip())
 
 
 async def read_items(request: Request) -> tuple[list, str]:
