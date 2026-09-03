@@ -89,6 +89,10 @@ class Catalog:
     def all(self) -> list[Product]:
         return [self._row(r) for r in self.conn.execute("select * from products order by rowid").fetchall()]
 
+    def find_by_razorpay_item_id(self, item_id: str) -> Product | None:
+        row = self.conn.execute("select * from products where razorpay_item_id = ?", (item_id,)).fetchone()
+        return self._row(row) if row else None
+
     def count(self) -> int:
         return self.conn.execute("select count(*) from products").fetchone()[0]
 
