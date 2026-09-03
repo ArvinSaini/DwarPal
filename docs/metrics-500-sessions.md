@@ -1,6 +1,6 @@
 # Dwarpal batch metrics
 
-500 sessions, seed 11, 3 agents, scripted carts against the real gate and state machine with fake payments. Generated 2026-09-03 18:21 UTC.
+500 sessions, seed 11, 3 agents, scripted carts against the real gate and state machine with fake payments. Generated 2026-09-03 18:26 UTC.
 
 ## Outcomes
 
@@ -45,6 +45,7 @@ Intended scenario mix: abandoned 22, allowed_paid 281, payfail_then_paid 74, ref
 ## Audit
 
 - Ledger chain: verified (4341 events)
+- Decisions replayed from their recorded inputs: 1075 / 1075 identical
 
 ## What this does and does not prove
 

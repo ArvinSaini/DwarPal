@@ -79,6 +79,9 @@ class Report:
     ledger_ok: bool = False
     ledger_events: int = 0
     agents: int = 0
+    replay_decisions: int = 0
+    replay_identical: int = 0
+    abandoned: int = 0
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -219,6 +222,11 @@ def run_batch(n: int = 50, seed: int = 7, start_ts: int = 1_756_900_000) -> Repo
             (with_offer if "crosssell.accepted" in types else without_offer).append(total)
 
     verify = ledger.verify()
+    from dwarpal.replay import replay as replay_ledger
+
+    rep = replay_ledger(ledger)
+    report.replay_decisions, report.replay_identical = rep.decisions, rep.identical
+    report.abandoned = sum(1 for rec in per_session if rec["session"]["status"] == CANCELED)
     report.scenario_counts = dict(scenario_counts)
     report.outcomes = dict(outcomes)
     report.denials_by_rule = dict(sorted(denials.items()))
@@ -275,7 +283,8 @@ def render_markdown(r: Report) -> str:
               f"- Average completed basket without: {rupees(r.avg_basket_without_offer_paise)}",
               f"- Completed revenue: {rupees(r.completed_revenue_paise)}", "",
               "## Audit", "",
-              f"- Ledger chain: {'verified' if r.ledger_ok else 'BROKEN'} ({r.ledger_events} events)", "",
+              f"- Ledger chain: {'verified' if r.ledger_ok else 'BROKEN'} ({r.ledger_events} events)",
+              f"- Decisions replayed from their recorded inputs: {r.replay_identical} / {r.replay_decisions} identical", "",
               "## What this does and does not prove", "",
               "These are scripted inputs run through deterministic code, so zero overruns and fully explained "
               "denials are expected by construction; the evidence is that the failure paths really fire and "
