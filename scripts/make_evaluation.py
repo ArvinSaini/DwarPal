@@ -77,12 +77,13 @@ def build(skip_tests: bool) -> str:
     # -- 1. tests ----------------------------------------------------------------------------------
     L += ["## 1. Automated test suite", ""]
     if skip_tests:
-        L += ["Skipped in this run (`--skip-tests`).", ""]
+        L += ["Skipped in this run (`--skip-tests`). See `docs/test-results.md` for the full analysis.", ""]
     else:
         L += ["| Metric | Value |", "|---|---|",
               f"| Tests passed | {passed} / {passed + failed} ({pct(passed, passed + failed)}) |",
               f"| Tests failed | {failed} |",
-              "| Network access during tests | none (fake Razorpay, fake model, fixed clock) |", ""]
+              "| Network access during tests | none (fake Razorpay, fake model, fixed clock) |", "",
+              "Per-file breakdown, timing and coverage notes: `docs/test-results.md`.", ""]
 
     # -- 2. gate eval -------------------------------------------------------------------------------
     L += ["## 2. Gate eval: adversarial and benign carts", "",
