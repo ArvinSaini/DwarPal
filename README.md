@@ -150,6 +150,14 @@ python -m dwarpal demo --scenario refund     # paid, then the merchant refunds a
 Add `--planner llm` for the real tool-calling buyer and `--payments real` for real test-mode links. Each run
 registers a fresh demo agent and prints the narrative and the session's ledger trail.
 
+## Evaluation
+
+`docs/evaluation.md` is the consolidated evaluation with every figure as a fraction and a percentage: test pass rate,
+the gate eval as a detector (recall, precision, false-positive rate, specificity, accuracy, rule coverage), batch
+completion, refusal and abandon rates, explained-denial rate, overrun rate, payment recovery rate, budget release
+rate, cross-sell attach rate and basket uplift, ledger integrity and decision replay agreement. It is regenerated,
+not typed, by `python scripts/make_evaluation.py`.
+
 ## Metrics (scripted batch, fake payments)
 
 The batch generates its own test data: three agents with weekly mandates (renewed on expiry), a seeded mix of
@@ -230,9 +238,10 @@ dwarpal/
   metrics.py         batch report
   cli.py             python -m dwarpal ...
 tests/               282 offline tests
-docs/                architecture, threat model, decisions, protocol mapping, demo script, form answers,
-                     gate eval, metrics report, design spec and plan
+docs/                evaluation, architecture, threat model, decisions, protocol mapping, demo script,
+                     form answers, gate eval, metrics reports, design spec and plan
 scripts/smoke_razorpay.py   one-time real test-mode check
+scripts/make_evaluation.py  regenerates docs/evaluation.md from live runs
 ```
 
 MIT licensed.
