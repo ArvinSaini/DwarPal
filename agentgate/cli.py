@@ -101,6 +101,7 @@ def build_parser() -> argparse.ArgumentParser:
     s = sub.add_parser("ledger", help="verify, show, tamper (demo) or export a receipt")
     ss = s.add_subparsers(dest="ledger_cmd", required=True)
     ss.add_parser("verify")
+    ss.add_parser("replay", help="re-run every recorded gate decision from its recorded input and compare")
     sh = ss.add_parser("show")
     sh.add_argument("--limit", type=int, default=50, help="show the last N events")
     sh.add_argument("--session", help="only events for this session")
@@ -308,6 +309,12 @@ def _dispatch(args, settings: Settings) -> int:
                 return 0
             print(f"ledger chain BROKEN at seq {v.bad_seq}: {v.detail}")
             return 2
+        if args.ledger_cmd == "replay":
+            from agentgate.replay import render_report, replay
+
+            report = replay(ctx.ledger)
+            print(render_report(report))
+            return 0 if report.ok else 2
         if args.ledger_cmd == "show":
             events = ctx.ledger.events(session_id=args.session)[-args.limit:]
             for e in events:
