@@ -249,6 +249,21 @@ def install_dashboard(app: FastAPI, ctx) -> None:
             return redirect(f"/dashboard/sessions/{session_id}", exc.message)
         return redirect(f"/dashboard/sessions/{session_id}", f"Approved; the session is now {s['status']}")
 
+    @router.post("/sessions/{session_id}/refund")
+    def session_refund(session_id: str, _=Depends(require_merchant), amount: str = Form(""), reason: str = Form(""),
+                       reference: str = Form("")):
+        try:
+            paise = _paise_from_rupees(amount, "refund amount")
+            s = ctx.sessions.refund(session_id, paise, reason.strip(), reference.strip() or f"dash-{ctx.clock()}",
+                                    actor="merchant")
+        except ValueError as exc:
+            return redirect(f"/dashboard/sessions/{session_id}", f"Error: {exc}")
+        except SessionError as exc:
+            rule = exc.extra.get("rule_id")
+            return redirect(f"/dashboard/sessions/{session_id}", f"Refund refused{f' by {rule}' if rule else ''}: {exc.message}")
+        return redirect(f"/dashboard/sessions/{session_id}",
+                        f"Refund of {rupees(paise)} created ({s['refunds'][-1]['razorpay_refund_id']})")
+
     @router.post("/sessions/{session_id}/decline")
     def session_decline(session_id: str, _=Depends(require_merchant), note: str = Form("")):
         try:

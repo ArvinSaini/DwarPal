@@ -13,8 +13,8 @@ from typing import Callable
 
 from agentgate.crosssell import Offer, candidates
 from agentgate.db import dumps, loads, tx
-from agentgate.gate import (AUTHORITATIVE, PREVIEW, REVIEW, RETRY, Decision, GateInput, evaluate, gate_agent,
-                            gate_mandate)
+from agentgate.gate import (AUTHORITATIVE, PREVIEW, REVIEW, RETRY, Decision, GateInput, RefundInput, evaluate,
+                            evaluate_refund, gate_agent, gate_mandate)
 from agentgate.ids import new_id
 from agentgate.payments import Attempt, LinkInfo, PaymentRequest, PaymentsError
 
@@ -105,6 +105,13 @@ class SessionService:
         return [{"id": r["id"], "total_paise": r["total_paise"], "decision": r["decision"], "note": r["note"],
                  "actor": r["actor"], "created_at": r["created_at"]} for r in rows]
 
+    def _refunds(self, session_id: str) -> list[dict]:
+        rows = self.conn.execute("select * from refunds where session_id = ? order by rowid", (session_id,)).fetchall()
+        return [{"id": r["id"], "razorpay_payment_id": r["razorpay_payment_id"],
+                 "razorpay_refund_id": r["razorpay_refund_id"], "amount_paise": r["amount_paise"],
+                 "reason": r["reason"], "reference": r["reference"], "status": r["status"], "actor": r["actor"],
+                 "created_at": r["created_at"]} for r in rows]
+
     def _to_dict(self, row) -> dict:
         totals = loads(row["totals"]) or {}
         attempts = self._attempts(row["id"])
@@ -126,7 +133,7 @@ class SessionService:
             "currency": "INR", "line_items": loads(row["line_items"]) or [], "totals": totals,
             "messages": loads(row["messages"]) or [], "offers": loads(row["offers"]) or [],
             "decision": loads(row["last_decision"]), "payment": payment, "attempts": attempts,
-            "reviews": self._reviews(row["id"]),
+            "reviews": self._reviews(row["id"]), "refunds": self._refunds(row["id"]),
             "links": {"trail": f"{self.trail_base}/{row['id']}/trail"}, "attempt": row["attempt"],
             "created_at": row["created_at"], "updated_at": row["updated_at"], "completed_at": row["completed_at"],
         }
@@ -483,6 +490,54 @@ class SessionService:
                            {"attempt": next_attempt, "reason": reason, "previous_link_id": row["link_id"]}, session_id)
         self.ledger.append("payment.link.created", "payments",
                            self._link_payload(link, decision.total_paise, next_attempt, session_id), session_id)
+        return self._to_dict(self._load(session_id))
+
+    # -- refunds (merchant action; gated like every other money action) --------------------------
+
+    def refund(self, session_id: str, amount_paise, reason, reference, actor: str = "merchant") -> dict:
+        row = self._load(session_id)
+        if row is None:
+            raise SessionError(404, "not_found", "not_found", f"no checkout session {session_id}")
+        captured = self.conn.execute(
+            "select razorpay_payment_id, amount_paise, created_at from payments "
+            "where session_id = ? and status = 'captured' order by rowid limit 1", (session_id,)).fetchone()
+        refunds = self._refunds(session_id)
+        ri = RefundInput(
+            session_status=row["status"],
+            captured_paise=captured["amount_paise"] if captured else 0,
+            refunded_paise=sum(r["amount_paise"] for r in refunds),
+            amount_paise=amount_paise, reason=reason, reference=reference,
+            seen_references=tuple(r["reference"] for r in refunds),
+            captured_at=captured["created_at"] if captured else None,
+            now=self.clock(),
+            window_days=self.policies.get().get("refund_window_days", 30),
+        )
+        decision = evaluate_refund(ri)
+        self.ledger.append("refund.decision", "gate",
+                           {**decision.to_dict(), "amount_paise": amount_paise, "reference": reference,
+                            "reason": reason, "captured_paise": ri.captured_paise, "refunded_paise": ri.refunded_paise,
+                            "now": ri.now}, session_id)
+        if not decision.allowed:
+            raise SessionError(409, "policy_denied", "refund_denied", decision.reason,
+                               extra={"rule_id": decision.rule_id, "session_id": session_id})
+        notes = {"session_id": session_id, "reference": reference, "reason": reason[:200]}
+        try:
+            info = self.payments.refund(captured["razorpay_payment_id"], amount_paise, notes)
+        except PaymentsError as exc:
+            self.ledger.append("provider.error", "payments",
+                               {"op": "refund", "error": str(exc), "amount_paise": amount_paise}, session_id)
+            raise SessionError(502, "provider_error", "refund_provider_error",
+                               f"could not create the refund: {exc}") from exc
+        with tx(self.conn):
+            self.conn.execute(
+                "insert into refunds(id, session_id, mandate_id, razorpay_payment_id, razorpay_refund_id, amount_paise, "
+                "reason, reference, status, actor, created_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (new_id("rfd"), session_id, row["mandate_id"], captured["razorpay_payment_id"], info.refund_id,
+                 amount_paise, reason, reference, info.status, actor, self.clock()))
+        self.ledger.append("refund.created", "payments",
+                           {"razorpay_refund_id": info.refund_id, "razorpay_payment_id": captured["razorpay_payment_id"],
+                            "amount_paise": amount_paise, "reference": reference, "reason": reason,
+                            "status": info.status, "mandate_id": row["mandate_id"]}, session_id)
         return self._to_dict(self._load(session_id))
 
     # -- cancel ----------------------------------------------------------------------------------

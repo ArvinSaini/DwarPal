@@ -50,12 +50,21 @@ class PollResult:
     attempts: list[Attempt] = field(default_factory=list)
 
 
+@dataclass
+class RefundInfo:
+    refund_id: str
+    status: str
+    amount_paise: int
+
+
 class PaymentsPort(Protocol):
     def create_link(self, req: PaymentRequest) -> LinkInfo: ...
 
     def poll(self, link_id: str) -> PollResult: ...
 
     def cancel_link(self, link_id: str) -> None: ...
+
+    def refund(self, payment_id: str, amount_paise: int, notes: dict) -> RefundInfo: ...
 
 
 OUTCOMES = ("paid", "failed", "pending", "expired", "error")
@@ -64,13 +73,22 @@ OUTCOMES = ("paid", "failed", "pending", "expired", "error")
 class FakePayments:
     """In-memory stand-in. One outcome is consumed per created link (default ``paid``)."""
 
-    def __init__(self, outcomes: list[str] | None = None, fail_create: bool = False, fail_cancel: bool = False):
+    def __init__(self, outcomes: list[str] | None = None, fail_create: bool = False, fail_cancel: bool = False,
+                 fail_refund: bool = False):
         self.outcomes: list[str] = list(outcomes or [])
         self.fail_create = fail_create
         self.fail_cancel = fail_cancel
+        self.fail_refund = fail_refund
         self.links: dict[str, dict] = {}
         self.created: list[LinkInfo] = []
         self.cancelled: list[str] = []
+        self.refunds: list[tuple[str, int, dict]] = []
+
+    def refund(self, payment_id: str, amount_paise: int, notes: dict) -> RefundInfo:
+        if self.fail_refund:
+            raise PaymentsError("fake: refund failed")
+        self.refunds.append((payment_id, amount_paise, dict(notes)))
+        return RefundInfo(f"rfnd_fake{len(self.refunds):03d}", "processed", amount_paise)
 
     def create_link(self, req: PaymentRequest) -> LinkInfo:
         if self.fail_create:

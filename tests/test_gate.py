@@ -221,3 +221,50 @@ def test_g14_review_threshold_and_merchant_approval():
     assert evaluate(gi(policy=dict(POLICY, review_above_paise=249900))).allowed
     assert evaluate(gi(policy=dict(POLICY, review_above_paise=0))).allowed
     assert evaluate(gi(policy=policy, mode=PREVIEW, session_status="requires_review")).verdict == REVIEW
+
+
+# -- refund rules ---------------------------------------------------------------------------------
+
+def refund_input(**over):
+    from agentgate.gate import RefundInput
+    base = dict(session_status="completed", captured_paise=319800, refunded_paise=0, amount_paise=69900,
+                reason="bottle out of stock at dispatch", reference="shortfall-1", seen_references=(),
+                captured_at=NOW - 3600, now=NOW, window_days=30)
+    base.update(over)
+    return RefundInput(**base)
+
+
+def test_refund_allow_has_full_trail():
+    from agentgate.gate import evaluate_refund
+    d = evaluate_refund(refund_input())
+    assert d.allowed and d.total_paise == 69900
+    assert [c.rule for c in d.checks] == ["RF00_WELL_FORMED", "RF01_SESSION_COMPLETED", "RF02_WITHIN_CAPTURE",
+                                          "RF03_NO_DUPLICATE", "RF04_WITHIN_WINDOW"]
+
+
+@pytest.mark.parametrize("over,rule", [
+    (dict(amount_paise=0), "RF00_WELL_FORMED"),
+    (dict(amount_paise=True), "RF00_WELL_FORMED"),
+    (dict(reason=""), "RF00_WELL_FORMED"),
+    (dict(reference=""), "RF00_WELL_FORMED"),
+    (dict(session_status="payment_pending"), "RF01_SESSION_COMPLETED"),
+    (dict(captured_paise=0), "RF01_SESSION_COMPLETED"),
+    (dict(amount_paise=319801), "RF02_WITHIN_CAPTURE"),
+    (dict(refunded_paise=300000), "RF02_WITHIN_CAPTURE"),
+    (dict(seen_references=("shortfall-1",)), "RF03_NO_DUPLICATE"),
+    (dict(now=NOW + 31 * 86400), "RF04_WITHIN_WINDOW"),
+    (dict(captured_at=None), "RF04_WITHIN_WINDOW"),
+])
+def test_refund_rules(over, rule):
+    from agentgate.gate import evaluate_refund
+    d = evaluate_refund(refund_input(**over))
+    assert d.verdict == DENY and d.rule_id == rule, f"{d.rule_id}: {d.reason}"
+
+
+def test_refund_window_zero_means_no_window_and_guard():
+    from agentgate.gate import evaluate_refund
+    assert evaluate_refund(refund_input(now=NOW + 400 * 86400, window_days=0)).allowed
+    assert evaluate_refund(refund_input(amount_paise=319800)).allowed
+    assert evaluate_refund(refund_input(captured_paise="oops")).rule_id == "RF01_SESSION_COMPLETED"
+    d = evaluate_refund(refund_input(seen_references=None))  # iteration over None raises inside
+    assert d.verdict == DENY and d.rule_id == "G99_GATE_ERROR" and "TypeError" in d.checks[-1].detail

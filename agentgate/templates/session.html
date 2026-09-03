@@ -56,6 +56,25 @@
       <tr><th>Expires</th><td>{{ s.payment.expires_at|ts }}</td></tr>
     </table>
     {% else %}<p class="muted">No payment link yet.</p>{% endif %}
+    {% if s.status == 'completed' %}
+    <h3>Refund</h3>
+    <p class="muted">A refund is a money action: it passes rules RF00 to RF04 (completed and captured, within the refundable balance, no duplicate reference, inside the refund window) and lands in the ledger.</p>
+    <form method="post" action="/dashboard/sessions/{{ s.id }}/refund" class="actions">
+      <input name="amount" placeholder="amount (INR)" size="10" required>
+      <input name="reason" placeholder="reason" size="24" required>
+      <input name="reference" placeholder="reference" size="12">
+      <button type="submit" class="secondary">Refund</button>
+    </form>
+    {% endif %}
+    {% if s.refunds %}
+    <h3>Refunds</h3>
+    <table>
+      <tr><th>Razorpay refund</th><th>Amount</th><th>Reason</th><th>Reference</th><th>Status</th><th>When</th></tr>
+      {% for r in s.refunds %}
+      <tr><td class="mono">{{ r.razorpay_refund_id }}</td><td class="num">{{ r.amount_paise|rupees }}</td><td>{{ r.reason }}</td><td class="mono">{{ r.reference }}</td><td>{{ r.status }}</td><td class="muted">{{ r.created_at|ts }}</td></tr>
+      {% endfor %}
+    </table>
+    {% endif %}
     {% if s.attempts %}
     <h3>Attempts</h3>
     <table>

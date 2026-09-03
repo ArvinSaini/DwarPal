@@ -397,3 +397,71 @@ def test_approve_or_decline_in_wrong_state(world):
     with pytest.raises(SessionError) as ei:
         world.sessions.decline_review("cs_nope", "x")
     assert ei.value.status_code == 404
+
+
+# -- refunds --------------------------------------------------------------------------------------
+
+def paid_session(world, items=SHOES + [{"id": "prod_bottle", "quantity": 1}], key="k1", ckey="c1"):
+    p = pending(world, items, key, ckey)
+    return world.sessions.reconcile(p["id"])
+
+
+def test_refund_flow_reduces_spend_and_logs(world):
+    s = paid_session(world)
+    before_total, _ = world.mandates.spent(world.mandate.id, world.clock.now)
+    r = world.sessions.refund(s["id"], 69900, "bottle out of stock at dispatch", "shortfall-bottle")
+    assert r["status"] == COMPLETED and len(r["refunds"]) == 1
+    ref = r["refunds"][0]
+    assert ref["amount_paise"] == 69900 and ref["reference"] == "shortfall-bottle" and ref["razorpay_refund_id"]
+    assert ref["razorpay_payment_id"] == "pay_plink_fake001_ok"
+    assert types(world, s["id"])[-2:] == ["refund.decision", "refund.created"]
+    decision = [e for e in world.ledger.events(session_id=s["id"]) if e.type == "refund.decision"][-1]
+    assert decision.payload["verdict"] == "ALLOW" and decision.payload["amount_paise"] == 69900
+    after_total, _ = world.mandates.spent(world.mandate.id, world.clock.now)
+    assert after_total == before_total - 69900
+    assert world.payments.refunds[0][1] == 69900
+
+
+def test_refund_is_gated(world):
+    s = paid_session(world)
+    world.sessions.refund(s["id"], 300000, "goodwill", "r1")
+    with pytest.raises(SessionError) as ei:
+        world.sessions.refund(s["id"], 20000, "too much", "r2")
+    assert ei.value.status_code == 409 and ei.value.code == "refund_denied"
+    assert ei.value.extra["rule_id"] == "RF02_WITHIN_CAPTURE"
+    with pytest.raises(SessionError) as ei:
+        world.sessions.refund(s["id"], 100, "again", "r1")
+    assert ei.value.extra["rule_id"] == "RF03_NO_DUPLICATE"
+    assert types(world, s["id"])[-1] == "refund.decision"  # denials are recorded too
+    assert len(world.sessions.get_any(s["id"])["refunds"]) == 1
+
+
+def test_refund_needs_a_completed_session(world):
+    p = pending(world)
+    with pytest.raises(SessionError) as ei:
+        world.sessions.refund(p["id"], 100, "x", "r1")
+    assert ei.value.extra["rule_id"] == "RF01_SESSION_COMPLETED"
+    with pytest.raises(SessionError) as ei:
+        world.sessions.refund("cs_nope", 100, "x", "r1")
+    assert ei.value.status_code == 404
+
+
+def test_refund_window_from_policy(world):
+    s = paid_session(world)
+    world.policies.set(dict(world.policies.get(), refund_window_days=7))
+    world.clock.tick(8 * 86400)
+    with pytest.raises(SessionError) as ei:
+        world.sessions.refund(s["id"], 100, "late", "r1")
+    assert ei.value.extra["rule_id"] == "RF04_WITHIN_WINDOW"
+
+
+def test_refund_provider_error_is_recorded_and_nothing_stored(world):
+    s = paid_session(world)
+    world.payments.fail_refund = True
+    with pytest.raises(SessionError) as ei:
+        world.sessions.refund(s["id"], 100, "x", "r1")
+    assert ei.value.status_code == 502 and ei.value.code == "refund_provider_error"
+    assert types(world, s["id"])[-1] == "provider.error"
+    assert world.sessions.get_any(s["id"])["refunds"] == []
+    world.payments.fail_refund = False
+    assert len(world.sessions.refund(s["id"], 100, "x", "r1")["refunds"]) == 1

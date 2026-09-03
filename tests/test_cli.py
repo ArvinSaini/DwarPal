@@ -155,3 +155,14 @@ def test_review_commands(run, tmp_path):
     assert code == 0 and "ready_for_payment" in out
     code, out = run("review", "decline", sid)
     assert code == 1
+
+
+def test_refund_command(run):
+    run("init")
+    run("seed")
+    code, out = run("demo", "--scenario", "happy", "--payments", "fake")
+    sid = [w.strip(":,") for w in out.split() if w.startswith("cs_")][0]
+    code, out = run("refund", sid, "--amount", "699", "--reason", "bottle short-shipped", "--reference", "sf-1")
+    assert code == 0 and "rfnd_" in out and "INR 699.00" in out
+    code, out = run("refund", sid, "--amount", "99999", "--reason", "x", "--reference", "sf-2")
+    assert code == 1 and "RF02" in out

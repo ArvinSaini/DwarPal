@@ -11,7 +11,7 @@ from agentgate.ledger import canonical
 from agentgate.money import rupees
 from agentgate.payments import FakePayments
 
-SCENARIOS = ("happy", "refused", "replan", "payfail", "crosssell", "review")
+SCENARIOS = ("happy", "refused", "replan", "payfail", "crosssell", "review", "refund")
 
 INTENTS = {
     "happy": "Buy me trail running shoes and a steel water bottle for my runs. Budget 4,000 rupees.",
@@ -21,9 +21,10 @@ INTENTS = {
     "payfail": "Buy me trail running shoes. Budget 3,000 rupees.",
     "crosssell": "Buy me trail running shoes and whatever the store suggests goes with them. Budget 3,500 rupees.",
     "review": "Buy me trail running shoes and a yoga mat. Budget 4,000 rupees.",
+    "refund": "Buy me trail running shoes and a steel water bottle. Budget 4,000 rupees.",
 }
 BUDGETS = {"happy": 400000, "refused": 800000, "replan": 400000, "payfail": 300000, "crosssell": 350000,
-           "review": 400000}
+           "review": 400000, "refund": 400000}
 REVIEW_THRESHOLD_PAISE = 300000  # the review scenario sets the store's review threshold to INR 3,000
 
 SHOES = [{"id": "prod_shoes", "quantity": 1}]
@@ -69,6 +70,11 @@ def scripted_plan(scenario: str) -> list[Action]:
         return [Action("list_products", say="Looking for trail running shoes and a yoga mat."),
                 Action("create_checkout_session", {"items": SHOES + MAT}),
                 Action("done", say="The order is above the store's review threshold; waiting for the merchant.")]
+    if scenario == "refund":
+        return [Action("list_products", say="Looking for running shoes and a bottle."),
+                Action("create_checkout_session", {"items": SHOES + BOTTLE}),
+                Action("complete_checkout_session", {"session_id": "$session"}),
+                Action("done", say="Ordered trail shoes and a steel bottle; the user pays at the link.")]
     raise ValueError(f"unknown scenario {scenario!r}; choose one of {SCENARIOS}")
 
 
@@ -153,6 +159,16 @@ def run_demo(ctx, scenario: str, planner: str = "scripted", llm=None, wait_s: in
                             sleep=sleep, wait_for_payment_s=wait_s, poll_every_s=poll_every_s,
                             printer=lambda line: printer("  " + line))
         result = second.run(max_steps=max_steps)
+    if scenario == "refund" and result.outcome == "paid" and result.session_id:
+        printer("")
+        printer("  [merchant] The bottle turned out to be out of stock at dispatch. Refunding INR 699.00 for it.")
+        try:
+            s = ctx.sessions.refund(result.session_id, 69900, "steel bottle out of stock at dispatch",
+                                    "shortfall-bottle", actor="merchant")
+            printer(f"  [merchant] Refund {s['refunds'][-1]['razorpay_refund_id']} created; the agent's mandate "
+                    f"gets INR 699.00 of budget back.")
+        except Exception as exc:  # shown honestly in the demo output
+            printer(f"  [merchant] Refund refused: {exc}")
     printer("")
     printer(f"Outcome: {result.outcome}")
     if result.session_id:

@@ -43,3 +43,10 @@ def test_review_threshold_is_optional_and_defaults_to_zero():
     doc = {k: v for k, v in DEFAULT_POLICY.items() if k != "review_above_paise"}
     assert validate_policy(doc)["review_above_paise"] == 0
     assert validate_policy(dict(DEFAULT_POLICY, review_above_paise=300000))["review_above_paise"] == 300000
+
+
+def test_refund_window_is_optional_and_validated():
+    doc = {k: v for k, v in DEFAULT_POLICY.items() if k != "refund_window_days"}
+    assert validate_policy(doc)["refund_window_days"] == 30
+    with pytest.raises(PolicyError):
+        validate_policy(dict(DEFAULT_POLICY, refund_window_days=-1))

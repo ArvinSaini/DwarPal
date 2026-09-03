@@ -118,6 +118,22 @@ CREATE TABLE IF NOT EXISTS payments (
   UNIQUE (session_id, razorpay_payment_id)
 );
 
+CREATE TABLE IF NOT EXISTS refunds (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL,
+  mandate_id TEXT,
+  razorpay_payment_id TEXT NOT NULL,
+  razorpay_refund_id TEXT NOT NULL,
+  amount_paise INTEGER NOT NULL CHECK (amount_paise >= 1),
+  reason TEXT NOT NULL,
+  reference TEXT NOT NULL,
+  status TEXT NOT NULL,
+  actor TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  UNIQUE (session_id, reference)
+);
+CREATE INDEX IF NOT EXISTS idx_refunds_mandate ON refunds(mandate_id);
+
 CREATE TABLE IF NOT EXISTS ledger (
   seq INTEGER PRIMARY KEY AUTOINCREMENT,
   id TEXT NOT NULL,

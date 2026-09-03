@@ -119,6 +119,12 @@ def build_parser() -> argparse.ArgumentParser:
     dc.add_argument("session_id")
     dc.add_argument("--note", default="")
 
+    s = sub.add_parser("refund", help="refund part or all of a completed session (gated: rules RF00-RF04)")
+    s.add_argument("session_id")
+    s.add_argument("--amount", required=True, help="amount in rupees")
+    s.add_argument("--reason", required=True)
+    s.add_argument("--reference", default=None, help="idempotent reference (default: a timestamp)")
+
     s = sub.add_parser("eval", help="run the adversarial gate eval (offline, no model) and print the table")
     s.add_argument("--out", help="also write the Markdown table to this file")
 
@@ -339,6 +345,22 @@ def _dispatch(args, settings: Settings) -> int:
         except SessionError as exc:
             raise ConfigError(exc.message)
         print(f"{args.session_id}: {args.review_cmd}d, session is now {s['status']}")
+        return 0
+
+    if cmd == "refund":
+        from agentgate.sessions import SessionError
+
+        ctx = build_context(settings)
+        paise = _paise(args.amount, "--amount")
+        reference = args.reference or f"cli-{ctx.clock()}"
+        try:
+            s = ctx.sessions.refund(args.session_id, paise, args.reason, reference, actor="merchant")
+        except SessionError as exc:
+            rule = exc.extra.get("rule_id")
+            raise ConfigError(f"refund refused{f' by {rule}' if rule else ''}: {exc.message}")
+        r = s["refunds"][-1]
+        print(f"Refund {r['razorpay_refund_id']} of {rupees(r['amount_paise'])} created for {args.session_id} "
+              f"(status {r['status']}, reference {r['reference']}).")
         return 0
 
     if cmd == "eval":

@@ -16,7 +16,7 @@ from typing import Callable
 
 from agentgate import __version__
 from agentgate.catalog import Catalog, Product
-from agentgate.payments import Attempt, LinkInfo, PaymentRequest, PaymentsError, PollResult
+from agentgate.payments import Attempt, LinkInfo, PaymentRequest, PaymentsError, PollResult, RefundInfo
 
 REQUEST_TIMEOUT_S = 10
 MIN_LINK_TTL_S = 16 * 60
@@ -102,6 +102,14 @@ class RazorpayPayments:
             self.client.payment_link.cancel(link_id, timeout=self.timeout_s)
         except Exception as exc:
             raise PaymentsError(f"razorpay cancel_link failed: {type(exc).__name__}: {exc}") from exc
+
+    def refund(self, payment_id: str, amount_paise: int, notes: dict) -> RefundInfo:
+        try:
+            data = self.client.payment.refund(payment_id, {"amount": amount_paise, "notes": notes},
+                                              timeout=self.timeout_s)
+        except Exception as exc:
+            raise PaymentsError(f"razorpay refund failed: {type(exc).__name__}: {exc}") from exc
+        return RefundInfo(data["id"], data.get("status") or "pending", int(data.get("amount") or amount_paise))
 
 
 # -- catalog sync ---------------------------------------------------------------------------------

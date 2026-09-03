@@ -181,4 +181,8 @@ class MandateStore:
             total += r["amount_paise"]
             if start <= r["created_at"] < end:
                 today += r["amount_paise"]
-        return total, today
+        # Refunds give budget back against the total cap. The daily cap is about outflow velocity, so it is
+        # left alone on purpose.
+        refunded = self.conn.execute("select coalesce(sum(amount_paise), 0) from refunds where mandate_id = ?",
+                                     (mandate_id,)).fetchone()[0]
+        return max(0, total - refunded), today

@@ -13,9 +13,10 @@ DEFAULT_POLICY: dict = {
     "max_qty_per_line": 5,
     "in_stock_only": True,
     "review_above_paise": 0,  # 0 = never ask the merchant; otherwise orders above this wait for approval
+    "refund_window_days": 30,  # 0 = no window; otherwise refunds only within N days of capture
 }
 REQUIRED_KEYS = ("max_order_paise", "allowed_categories", "blocked_skus", "max_qty_per_line", "in_stock_only")
-OPTIONAL_KEYS = ("review_above_paise",)
+OPTIONAL_KEYS = ("review_above_paise", "refund_window_days")
 POLICY_KEYS = REQUIRED_KEYS + OPTIONAL_KEYS
 
 
@@ -55,6 +56,9 @@ def validate_policy(doc) -> dict:
     review = doc.get("review_above_paise", 0)
     if type(review) is not int or review < 0:
         raise PolicyError("review_above_paise must be a non-negative integer (paise); 0 disables review")
+    window = doc.get("refund_window_days", 30)
+    if type(window) is not int or window < 0:
+        raise PolicyError("refund_window_days must be a non-negative integer; 0 disables the window")
     return {
         "max_order_paise": mo,
         "allowed_categories": _str_list(doc["allowed_categories"], "allowed_categories"),
@@ -62,6 +66,7 @@ def validate_policy(doc) -> dict:
         "max_qty_per_line": mq,
         "in_stock_only": doc["in_stock_only"],
         "review_above_paise": review,
+        "refund_window_days": window,
     }
 
 

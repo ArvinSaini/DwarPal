@@ -58,3 +58,12 @@ def test_set_outcome_changes_later_polls():
     assert fp.poll(info.link_id).link_status == "created"
     fp.set_outcome(info.link_id, "paid")
     assert fp.poll(info.link_id).link_status == "paid"
+
+
+def test_refund_records_and_can_fail():
+    fp = FakePayments()
+    info = fp.refund("pay_1", 500, {"session_id": "cs_1"})
+    assert info.refund_id == "rfnd_fake001" and info.status == "processed" and info.amount_paise == 500
+    assert fp.refunds == [("pay_1", 500, {"session_id": "cs_1"})]
+    with pytest.raises(PaymentsError):
+        FakePayments(fail_refund=True).refund("pay_1", 1, {})
