@@ -32,7 +32,7 @@ reasoning, on top of `ledger verify` proving the record itself.
 Where the model is: catalog enrichment, cross-sell picks, the demo buyer agent. Where it is not: any decision
 about money. An adversarial eval of 25 hand-built cases blocks 16 of 16 abusive carts with 0 of 8 benign carts
 wrongly blocked, across 14 distinct rules. A batch of fifty scripted sessions reports denials by rule, zero mandate
-overruns, failures retried and recovered, attach rate and a verified chain. The repo has 282 offline tests, a
+overruns, failures retried and recovered, attach rate and a verified chain. The repo has 286 offline tests, a
 merchant dashboard, a CLI with seven demo scenarios, and a buyer agent that replans after a refusal.
 
 **Build challenges and technical obstacles**
