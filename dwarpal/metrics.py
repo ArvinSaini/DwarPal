@@ -27,6 +27,7 @@ from dwarpal.policy import PolicyStore
 from dwarpal.sessions import CANCELED, COMPLETED, NOT_READY, PENDING, READY, SessionError, SessionService
 
 SCENARIO_WEIGHTS = [("allowed_paid", 0.55), ("refused", 0.25), ("payfail_then_paid", 0.15), ("abandoned", 0.05)]
+MANDATE_DAYS = 7
 
 ALLOWED_CARTS = [
     [{"id": "prod_shoes", "quantity": 1}],
@@ -115,19 +116,20 @@ def run_batch(n: int = 50, seed: int = 7, start_ts: int = 1_756_900_000) -> Repo
     payments = FakePayments()
     sessions = SessionService(conn, catalog, policies, agents, mandates, ledger, payments, FakePicker(), clock)
 
-    # Three agents with different mandates so several rules get exercised.
-    roster = []
+    # Three agents with weekly mandates, renewed on expiry like a merchant would. The small-budget agent runs
+    # its weekly total down on purpose; that is what exercises G12 without letting it dominate the batch.
+    roster: list[list] = []
     for name, caps in (("wide-bot", dict(per_txn_cap_paise=400000, daily_cap_paise=5_000_000,
-                                          total_cap_paise=10_000_000, categories=[])),
+                                          total_cap_paise=30_000_000, categories=[])),
                        ("apparel-bot", dict(per_txn_cap_paise=400000, daily_cap_paise=5_000_000,
-                                             total_cap_paise=10_000_000, categories=["footwear", "apparel"])),
+                                             total_cap_paise=30_000_000, categories=["footwear", "apparel"])),
                        ("small-bot", dict(per_txn_cap_paise=400000, daily_cap_paise=5_000_000,
                                            total_cap_paise=1_500_000, categories=[]))):
         agent, _ = agents.register(name)
         ledger.append("agent.registered", "merchant", {"agent_id": agent.id, "name": name})
-        mandate = mandates.create(agent.id, expires_at=start_ts + 30 * 86400, **caps)
+        mandate = mandates.create(agent.id, expires_at=start_ts + MANDATE_DAYS * 86400, **caps)
         ledger.append("mandate.created", "merchant", mandate.to_dict())
-        roster.append((agent, mandate))
+        roster.append([agent, mandate, caps])
 
     report = Report(sessions=n, seed=seed, agents=len(roster))
     scenario_counts: Counter = Counter()
@@ -136,10 +138,14 @@ def run_batch(n: int = 50, seed: int = 7, start_ts: int = 1_756_900_000) -> Repo
     per_session: list[dict] = []
 
     for i in range(n):
-        clock.now += 60
+        clock.now += 3600  # one order an hour: a batch spans days, so the daily cap is a boundary, not a wall
+        for entry in roster:
+            if clock.now >= entry[1].expires_at:  # weekly mandate expired: the merchant re-issues it
+                entry[1] = mandates.create(entry[0].id, expires_at=clock.now + MANDATE_DAYS * 86400, **entry[2])
+                ledger.append("mandate.created", "merchant", {**entry[1].to_dict(), "reason": "weekly renewal"})
         scenario = _pick_scenario(rng)
         scenario_counts[scenario] += 1
-        agent, mandate = rng.choices(roster, weights=[0.5, 0.3, 0.2])[0]
+        agent, mandate, _caps = rng.choices(roster, weights=[0.5, 0.3, 0.2])[0]
         intended_rule = None
         if scenario == "refused":
             intended_rule, items = rng.choice(REFUSED_CARTS)
@@ -172,9 +178,9 @@ def run_batch(n: int = 50, seed: int = 7, start_ts: int = 1_756_900_000) -> Repo
         if s["status"] == NOT_READY:
             denials[(s["messages"] or [{}])[0].get("rule_id", "unknown")] += 1
 
-    # Invariants: no mandate over-committed, per transaction, per day, or in total.
+    # Invariants: no mandate over-committed, per transaction, per day, or in total (every mandate ever issued).
     overruns = 0
-    for agent, mandate in roster:
+    for mandate in mandates.all():
         rows = conn.execute("select session_id, amount_paise, created_at from reservations "
                             "where mandate_id = ? and state in ('reserved', 'committed')", (mandate.id,)).fetchall()
         if sum(r["amount_paise"] for r in rows) > mandate.total_cap_paise:
