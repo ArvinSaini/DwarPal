@@ -4,12 +4,26 @@
 <h1>Session <span class="mono">{{ s.id }}</span> <span class="status {{ s.status }}">{{ s.status }}</span></h1>
 <p class="muted">Agent <span class="mono">{{ s.agent_id }}</span> · mandate <span class="mono">{{ s.mandate_id }}</span> · created {{ s.created_at|ts }} · updated {{ s.updated_at|ts }}</p>
 
+{% if s.status == 'requires_review' %}
+<section class="card review">
+  <h2>This order is waiting for your review</h2>
+  <p>Total {{ s.totals.total_paise|rupees }} is above the review threshold. Approving covers this exact total only; if the agent changes the cart it comes back here.</p>
+  <div class="actions">
+    <form method="post" action="/dashboard/sessions/{{ s.id }}/approve"><input name="note" placeholder="note (optional)"> <button type="submit">Approve</button></form>
+    <form method="post" action="/dashboard/sessions/{{ s.id }}/decline"><input name="note" placeholder="reason for the agent"> <button type="submit" class="secondary">Decline</button></form>
+  </div>
+</section>
+{% endif %}
+
 <div class="actions">
   {% if s.status not in ('completed', 'canceled') %}
   <form method="post" action="/dashboard/sessions/{{ s.id }}/cancel"><button type="submit" class="secondary">Cancel session</button></form>
   {% endif %}
   <a class="button secondary" href="/dashboard/ledger/receipt/{{ s.id }}">Receipt (Markdown)</a>
 </div>
+{% if s.reviews %}
+<p class="muted">Reviews: {% for r in s.reviews %}{{ r.decision }} {{ r.total_paise|rupees }} by {{ r.actor }} at {{ r.created_at|ts }}{% if r.note %} ("{{ r.note }}"){% endif %}{{ '; ' if not loop.last }}{% endfor %}</p>
+{% endif %}
 
 <div class="grid2">
   <section class="card">

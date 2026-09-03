@@ -241,6 +241,22 @@ def install_dashboard(app: FastAPI, ctx) -> None:
             return redirect(f"/dashboard/sessions/{session_id}", exc.message)
         return redirect(f"/dashboard/sessions/{session_id}", "Session cancelled and any reservation released")
 
+    @router.post("/sessions/{session_id}/approve")
+    def session_approve(session_id: str, _=Depends(require_merchant), note: str = Form("")):
+        try:
+            s = ctx.sessions.approve_review(session_id, note, actor="merchant")
+        except SessionError as exc:
+            return redirect(f"/dashboard/sessions/{session_id}", exc.message)
+        return redirect(f"/dashboard/sessions/{session_id}", f"Approved; the session is now {s['status']}")
+
+    @router.post("/sessions/{session_id}/decline")
+    def session_decline(session_id: str, _=Depends(require_merchant), note: str = Form("")):
+        try:
+            ctx.sessions.decline_review(session_id, note, actor="merchant")
+        except SessionError as exc:
+            return redirect(f"/dashboard/sessions/{session_id}", exc.message)
+        return redirect(f"/dashboard/sessions/{session_id}", "Declined; the agent can change the cart")
+
     # -- ledger -----------------------------------------------------------------------------------
 
     def ledger_page(request: Request):

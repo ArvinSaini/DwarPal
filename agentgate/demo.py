@@ -11,7 +11,7 @@ from agentgate.ledger import canonical
 from agentgate.money import rupees
 from agentgate.payments import FakePayments
 
-SCENARIOS = ("happy", "refused", "replan", "payfail", "crosssell")
+SCENARIOS = ("happy", "refused", "replan", "payfail", "crosssell", "review")
 
 INTENTS = {
     "happy": "Buy me trail running shoes and a steel water bottle for my runs. Budget 4,000 rupees.",
@@ -20,12 +20,16 @@ INTENTS = {
               "Budget 4,000 rupees.",
     "payfail": "Buy me trail running shoes. Budget 3,000 rupees.",
     "crosssell": "Buy me trail running shoes and whatever the store suggests goes with them. Budget 3,500 rupees.",
+    "review": "Buy me trail running shoes and a yoga mat. Budget 4,000 rupees.",
 }
-BUDGETS = {"happy": 400000, "refused": 800000, "replan": 400000, "payfail": 300000, "crosssell": 350000}
+BUDGETS = {"happy": 400000, "refused": 800000, "replan": 400000, "payfail": 300000, "crosssell": 350000,
+           "review": 400000}
+REVIEW_THRESHOLD_PAISE = 300000  # the review scenario sets the store's review threshold to INR 3,000
 
 SHOES = [{"id": "prod_shoes", "quantity": 1}]
 BOTTLE = [{"id": "prod_bottle", "quantity": 1}]
 WATCH = [{"id": "prod_watch", "quantity": 1}]
+MAT = [{"id": "prod_mat", "quantity": 1}]
 
 # Demo mandate for every scenario: INR 4,000 per order, 8,000 per day, 20,000 total, any category.
 MANDATE = dict(per_txn_cap_paise=400000, daily_cap_paise=800000, total_cap_paise=2000000, categories=[])
@@ -61,7 +65,18 @@ def scripted_plan(scenario: str) -> list[Action]:
                        say="Taking the store's first suggested add-on."),
                 Action("complete_checkout_session", {"session_id": "$session"}),
                 Action("done", say="Ordered the shoes plus the suggested add-on; the user pays at the link.")]
+    if scenario == "review":
+        return [Action("list_products", say="Looking for trail running shoes and a yoga mat."),
+                Action("create_checkout_session", {"items": SHOES + MAT}),
+                Action("done", say="The order is above the store's review threshold; waiting for the merchant.")]
     raise ValueError(f"unknown scenario {scenario!r}; choose one of {SCENARIOS}")
+
+
+def review_completion_plan(session_id: str) -> list[Action]:
+    """Second half of the review scenario, after the merchant approved."""
+    return [Action("get_checkout_session", {"session_id": session_id}, say="Checking whether the merchant decided."),
+            Action("complete_checkout_session", {"session_id": session_id}),
+            Action("done", say="Approved and completed; the user pays at the link.")]
 
 
 def summarise_event(e: dict) -> str:
@@ -106,6 +121,12 @@ def run_demo(ctx, scenario: str, planner: str = "scripted", llm=None, wait_s: in
     ctx.ledger.append("mandate.created", "merchant", mandate.to_dict())
     if scenario == "payfail" and isinstance(ctx.payments, FakePayments):
         ctx.payments.outcomes = ["failed", "paid"]
+    if scenario == "review":
+        policy = ctx.policies.get()
+        if policy.get("review_above_paise", 0) != REVIEW_THRESHOLD_PAISE:
+            clean = ctx.policies.set(dict(policy, review_above_paise=REVIEW_THRESHOLD_PAISE))
+            ctx.ledger.append("policy.updated", "merchant", {"policy": clean, "reason": "demo review scenario"})
+            printer(f"(merchant policy: orders above {rupees(REVIEW_THRESHOLD_PAISE)} now need a human review)")
 
     printer(f"Scenario: {scenario}")
     printer(f"Intent:   {INTENTS[scenario]}")
@@ -124,6 +145,14 @@ def run_demo(ctx, scenario: str, planner: str = "scripted", llm=None, wait_s: in
     runner = BuyerAgent(client, plan, clock=ctx.clock, sleep=sleep, wait_for_payment_s=wait_s,
                         poll_every_s=poll_every_s, printer=lambda line: printer("  " + line))
     result = runner.run(max_steps=max_steps)
+    if scenario == "review" and result.outcome == "requires_review" and result.session_id:
+        printer("")
+        printer("  [merchant] The order shows up in the dashboard's review queue. Approving it.")
+        ctx.sessions.approve_review(result.session_id, "demo: approved by the merchant", actor="merchant")
+        second = BuyerAgent(client, ScriptedPlanner(review_completion_plan(result.session_id)), clock=ctx.clock,
+                            sleep=sleep, wait_for_payment_s=wait_s, poll_every_s=poll_every_s,
+                            printer=lambda line: printer("  " + line))
+        result = second.run(max_steps=max_steps)
     printer("")
     printer(f"Outcome: {result.outcome}")
     if result.session_id:

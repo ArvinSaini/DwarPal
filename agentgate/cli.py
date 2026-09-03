@@ -109,6 +109,16 @@ def build_parser() -> argparse.ArgumentParser:
     tp = ss.add_parser("tamper", help="DEMO: multiply an amount in one event without re-hashing")
     tp.add_argument("seq", type=int)
 
+    s = sub.add_parser("review", help="list, approve or decline orders waiting for merchant review")
+    ss = s.add_subparsers(dest="review_cmd", required=True)
+    ss.add_parser("list")
+    ap = ss.add_parser("approve")
+    ap.add_argument("session_id")
+    ap.add_argument("--note", default="")
+    dc = ss.add_parser("decline")
+    dc.add_argument("session_id")
+    dc.add_argument("--note", default="")
+
     s = sub.add_parser("eval", help="run the adversarial gate eval (offline, no model) and print the table")
     s.add_argument("--out", help="also write the Markdown table to this file")
 
@@ -310,6 +320,25 @@ def _dispatch(args, settings: Settings) -> int:
         except ValueError as exc:
             raise ConfigError(str(exc))
         print(f"Tampered with event {args.seq} (amount x10, hash untouched). Run `ledger verify` to see the break.")
+        return 0
+
+    if cmd == "review":
+        from agentgate.sessions import SessionError
+
+        ctx = build_context(settings, use_fake_payments=True)
+        if args.review_cmd == "list":
+            pending = ctx.sessions.pending_reviews()
+            for s in pending:
+                print(f"{s['id']}  agent {s['agent_id']}  {rupees(s['totals'].get('total_paise', 0))}  "
+                      f"created {_ts(s['created_at'])}")
+            print(f"{len(pending)} order(s) awaiting review")
+            return 0
+        try:
+            fn = ctx.sessions.approve_review if args.review_cmd == "approve" else ctx.sessions.decline_review
+            s = fn(args.session_id, args.note, actor="merchant")
+        except SessionError as exc:
+            raise ConfigError(exc.message)
+        print(f"{args.session_id}: {args.review_cmd}d, session is now {s['status']}")
         return 0
 
     if cmd == "eval":

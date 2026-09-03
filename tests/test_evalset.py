@@ -15,7 +15,9 @@ def test_block_rate_and_false_positive_rate_are_reported():
     results = run_eval()
     abusive = [r for r in results if r.kind == "abusive"]
     benign = [r for r in results if r.kind == "benign"]
-    assert len(abusive) >= 11 and len(benign) >= 5
+    review = [r for r in results if r.kind == "review"]
+    assert len(abusive) >= 11 and len(benign) >= 5 and len(review) >= 1
+    assert all(r.verdict == "REVIEW" for r in review)
     assert all(r.verdict == "DENY" for r in abusive)
     assert all(r.verdict == "ALLOW" for r in benign)
     md = render_markdown(results)

@@ -1,9 +1,10 @@
 """Checkout sessions: the state machine that turns a cart into a Razorpay Payment Link, and back.
 
-States: not_ready_for_payment -> ready_for_payment -> payment_pending -> completed | canceled.
+States: not_ready_for_payment | requires_review -> ready_for_payment -> payment_pending -> completed | canceled.
 The gate runs in *preview* mode on create/update (no money reserved), in *authoritative* mode on
 complete (money reserved, link created), and in *retry* mode before a second payment attempt.
-This module is the only code path that creates a payment link, and it does so only after ALLOW.
+Orders above the merchant's review threshold wait in ``requires_review`` until a human approves that
+exact total. This module is the only code path that creates a payment link, and only after ALLOW.
 """
 from __future__ import annotations
 
@@ -12,16 +13,19 @@ from typing import Callable
 
 from agentgate.crosssell import Offer, candidates
 from agentgate.db import dumps, loads, tx
-from agentgate.gate import AUTHORITATIVE, PREVIEW, RETRY, Decision, GateInput, evaluate, gate_agent, gate_mandate
+from agentgate.gate import (AUTHORITATIVE, PREVIEW, REVIEW, RETRY, Decision, GateInput, evaluate, gate_agent,
+                            gate_mandate)
 from agentgate.ids import new_id
 from agentgate.payments import Attempt, LinkInfo, PaymentRequest, PaymentsError
 
 NOT_READY = "not_ready_for_payment"
+REQUIRES_REVIEW = "requires_review"
 READY = "ready_for_payment"
 PENDING = "payment_pending"
 COMPLETED = "completed"
 CANCELED = "canceled"
 TERMINAL = {COMPLETED, CANCELED}
+EDITABLE = {NOT_READY, READY, REQUIRES_REVIEW}
 MAX_ATTEMPTS = 2
 
 
@@ -96,6 +100,11 @@ class SessionService:
                 (new_id("lp"), session_id, a.payment_id, a.status, a.amount_paise, a.error_code, a.error_description,
                  attempt_no, self.clock()))
 
+    def _reviews(self, session_id: str) -> list[dict]:
+        rows = self.conn.execute("select * from reviews where session_id = ? order by rowid", (session_id,)).fetchall()
+        return [{"id": r["id"], "total_paise": r["total_paise"], "decision": r["decision"], "note": r["note"],
+                 "actor": r["actor"], "created_at": r["created_at"]} for r in rows]
+
     def _to_dict(self, row) -> dict:
         totals = loads(row["totals"]) or {}
         attempts = self._attempts(row["id"])
@@ -117,11 +126,31 @@ class SessionService:
             "currency": "INR", "line_items": loads(row["line_items"]) or [], "totals": totals,
             "messages": loads(row["messages"]) or [], "offers": loads(row["offers"]) or [],
             "decision": loads(row["last_decision"]), "payment": payment, "attempts": attempts,
+            "reviews": self._reviews(row["id"]),
             "links": {"trail": f"{self.trail_base}/{row['id']}/trail"}, "attempt": row["attempt"],
             "created_at": row["created_at"], "updated_at": row["updated_at"], "completed_at": row["completed_at"],
         }
 
-    # -- gate and offers -------------------------------------------------------------------------
+    # -- gate, review approval and offers ---------------------------------------------------------
+
+    def _expected_total(self, items) -> int | None:
+        """The total the gate will compute, if the cart is well-formed; used to match a merchant approval."""
+        if not isinstance(items, list):
+            return None
+        snapshot = self.catalog.snapshot()
+        total = 0
+        for it in items:
+            if not isinstance(it, dict) or it.get("id") not in snapshot or type(it.get("quantity")) is not int:
+                return None
+            total += snapshot[it["id"]]["price_paise"] * it["quantity"]
+        return total
+
+    def _approved(self, session_id: str | None, total: int | None) -> bool:
+        if session_id is None or total is None:
+            return False
+        row = self.conn.execute("select decision, total_paise from reviews where session_id = ? order by rowid desc limit 1",
+                                (session_id,)).fetchone()
+        return bool(row and row["decision"] == "approved" and row["total_paise"] == total)
 
     def _decide(self, agent, items, status: str | None, mode: str, session_id: str | None = None,
                 exclude_self: bool = False):
@@ -131,8 +160,9 @@ class SessionService:
         if mandate is not None:
             spent_total, spent_today = self.mandates.spent(
                 mandate.id, now, exclude_session=session_id if exclude_self else None)
+        approved = self._approved(session_id, self._expected_total(items))
         gi = GateInput(gate_agent(agent), gate_mandate(mandate), self.policies.get(), self.catalog.snapshot(), items,
-                       spent_today, spent_total, now, status, mode)
+                       spent_today, spent_total, now, status, mode, merchant_approved=approved)
         return evaluate(gi), mandate, spent_today, spent_total, now
 
     def _log_decision(self, session_id: str, decision: Decision, mode: str, spent_today: int, spent_total: int,
@@ -142,10 +172,26 @@ class SessionService:
                             "spent_total_paise": spent_total, "now": now}, session_id)
 
     @staticmethod
+    def _status_for(decision: Decision) -> str:
+        if decision.allowed:
+            return READY
+        if decision.needs_review:
+            return REQUIRES_REVIEW
+        return NOT_READY
+
+    @staticmethod
     def _messages(decision: Decision) -> list[dict]:
         if decision.allowed:
             return []
+        if decision.needs_review:
+            return [{"type": "info", "code": "requires_review", "rule_id": decision.rule_id, "text": decision.reason}]
         return [{"type": "error", "code": "policy_denied", "rule_id": decision.rule_id, "text": decision.reason}]
+
+    def _log_review_request(self, session_id: str, decision: Decision) -> None:
+        if decision.needs_review:
+            self.ledger.append("review.requested", "gate",
+                               {"total_paise": decision.total_paise, "rule_id": decision.rule_id,
+                                "threshold_paise": self.policies.get().get("review_above_paise", 0)}, session_id)
 
     def _offers(self, decision: Decision, mandate, spent_today: int, spent_total: int) -> tuple[list[Offer], int]:
         if not decision.allowed or mandate is None:
@@ -179,7 +225,7 @@ class SessionService:
                                    param="Idempotency-Key")
         decision, mandate, spent_today, spent_total, now = self._decide(agent, items, None, PREVIEW)
         session_id = new_id("cs")
-        status = READY if decision.allowed else NOT_READY
+        status = self._status_for(decision)
         offers, candidate_count = self._offers(decision, mandate, spent_today, spent_total)
         with tx(self.conn):
             self.conn.execute(
@@ -194,6 +240,32 @@ class SessionService:
                            {"agent_id": agent.id, "items": items, "total_paise": decision.total_paise, "status": status},
                            session_id)
         self._log_decision(session_id, decision, PREVIEW, spent_today, spent_total, now)
+        self._log_review_request(session_id, decision)
+        if offers:
+            self.ledger.append("crosssell.offered", "crosssell",
+                               {"offers": [o.to_dict() for o in offers], "candidate_count": candidate_count}, session_id)
+        return self._to_dict(self._load(session_id))
+
+    def _reevaluate(self, row, agent, items, actor: str, event: str, extra_payload: dict | None = None) -> dict:
+        """Re-run the preview gate on ``items`` and store the result. Shared by update and review decisions."""
+        session_id = row["id"]
+        previous_offers = loads(row["offers"]) or []
+        item_ids = {it.get("id") for it in items if isinstance(it, dict)} if isinstance(items, list) else set()
+        accepted = [o["id"] for o in previous_offers if o["id"] in item_ids]
+        decision, mandate, spent_today, spent_total, now = self._decide(agent, items, row["status"], PREVIEW, session_id)
+        status = self._status_for(decision)
+        offers, candidate_count = self._offers(decision, mandate, spent_today, spent_total)
+        self._set(session_id, status=status, line_items=dumps([l.__dict__ for l in decision.lines]),
+                  totals=dumps(self._totals(decision)), messages=dumps(self._messages(decision)),
+                  offers=dumps([o.to_dict() for o in offers]), last_decision=dumps(decision.to_dict()),
+                  mandate_id=mandate.id if mandate else None)
+        if event:
+            self.ledger.append(event, actor, {"items": items, "total_paise": decision.total_paise, "status": status,
+                                              **(extra_payload or {})}, session_id)
+        self._log_decision(session_id, decision, PREVIEW, spent_today, spent_total, now)
+        self._log_review_request(session_id, decision)
+        if accepted:
+            self.ledger.append("crosssell.accepted", "crosssell", {"offer_ids": accepted}, session_id)
         if offers:
             self.ledger.append("crosssell.offered", "crosssell",
                                {"offers": [o.to_dict() for o in offers], "candidate_count": candidate_count}, session_id)
@@ -201,29 +273,45 @@ class SessionService:
 
     def update(self, agent, session_id: str, items) -> dict:
         row = self._owned(agent, session_id)
-        if row["status"] not in (NOT_READY, READY):
+        if row["status"] not in EDITABLE:
             raise SessionError(409, "session_state", "wrong_state",
-                               f"session is {row['status']}; only not_ready_for_payment or ready_for_payment "
-                               f"sessions can be updated")
-        previous_offers = loads(row["offers"]) or []
-        item_ids = {it.get("id") for it in items if isinstance(it, dict)} if isinstance(items, list) else set()
-        accepted = [o["id"] for o in previous_offers if o["id"] in item_ids]
-        decision, mandate, spent_today, spent_total, now = self._decide(agent, items, row["status"], PREVIEW, session_id)
-        status = READY if decision.allowed else NOT_READY
-        offers, candidate_count = self._offers(decision, mandate, spent_today, spent_total)
-        self._set(session_id, status=status, line_items=dumps([l.__dict__ for l in decision.lines]),
-                  totals=dumps(self._totals(decision)), messages=dumps(self._messages(decision)),
-                  offers=dumps([o.to_dict() for o in offers]), last_decision=dumps(decision.to_dict()),
-                  mandate_id=mandate.id if mandate else None)
-        self.ledger.append("session.updated", f"agent:{agent.id}",
-                           {"items": items, "total_paise": decision.total_paise, "status": status}, session_id)
-        self._log_decision(session_id, decision, PREVIEW, spent_today, spent_total, now)
-        if accepted:
-            self.ledger.append("crosssell.accepted", "crosssell", {"offer_ids": accepted}, session_id)
-        if offers:
-            self.ledger.append("crosssell.offered", "crosssell",
-                               {"offers": [o.to_dict() for o in offers], "candidate_count": candidate_count}, session_id)
+                               f"session is {row['status']}; only {', '.join(sorted(EDITABLE))} sessions can be updated")
+        return self._reevaluate(row, agent, items, f"agent:{agent.id}", "session.updated")
+
+    # -- merchant review -------------------------------------------------------------------------
+
+    def pending_reviews(self) -> list[dict]:
+        rows = self.conn.execute("select * from sessions where status = ? order by created_at, rowid",
+                                 (REQUIRES_REVIEW,)).fetchall()
+        return [self._to_dict(r) for r in rows]
+
+    def _review(self, session_id: str, decision: str, note: str, actor: str) -> dict:
+        row = self._load(session_id)
+        if row is None:
+            raise SessionError(404, "not_found", "not_found", f"no checkout session {session_id}")
+        if row["status"] != REQUIRES_REVIEW:
+            raise SessionError(409, "session_state", "wrong_state",
+                               f"session is {row['status']}; only requires_review sessions can be reviewed")
+        total = (loads(row["totals"]) or {}).get("total_paise", 0)
+        with tx(self.conn):
+            self.conn.execute(
+                "insert into reviews(id, session_id, total_paise, decision, note, actor, created_at) values (?, ?, ?, ?, ?, ?, ?)",
+                (new_id("rev"), session_id, total, decision, note or "", actor, self.clock()))
+        self.ledger.append(f"review.{decision}", actor, {"total_paise": total, "note": note or ""}, session_id)
+        agent = self.agents.get(row["agent_id"])
+        items = [{"id": l["id"], "quantity": l["quantity"]} for l in loads(row["line_items"]) or []]
+        if decision == "approved":
+            return self._reevaluate(self._load(session_id), agent, items, actor, "")
+        self._set(session_id, status=NOT_READY, offers="[]",
+                  messages=dumps([{"type": "error", "code": "review_declined", "rule_id": "G14_REVIEW_THRESHOLD",
+                                   "text": f"the merchant declined this order: {note or 'no reason given'}"}]))
         return self._to_dict(self._load(session_id))
+
+    def approve_review(self, session_id: str, note: str = "", actor: str = "merchant") -> dict:
+        return self._review(session_id, "approved", note, actor)
+
+    def decline_review(self, session_id: str, note: str = "", actor: str = "merchant") -> dict:
+        return self._review(session_id, "declined", note, actor)
 
     # -- complete --------------------------------------------------------------------------------
 
@@ -255,12 +343,22 @@ class SessionService:
         if (idempotency_key and row["complete_key"] == idempotency_key
                 and row["status"] in (PENDING, COMPLETED, CANCELED)):
             return self._to_dict(row)  # replay of the same complete request
+        if row["status"] == REQUIRES_REVIEW:
+            raise SessionError(409, "session_state", "requires_review",
+                               "this order is waiting for the merchant to review it; poll the session until it is "
+                               "ready_for_payment or change the cart")
         if row["status"] != READY:
             raise SessionError(409, "session_state", "wrong_state",
                                f"session is {row['status']}; complete requires ready_for_payment")
         items = [{"id": l["id"], "quantity": l["quantity"]} for l in loads(row["line_items"]) or []]
         decision, mandate, spent_today, spent_total, now = self._decide(agent, items, READY, AUTHORITATIVE, session_id)
         self._log_decision(session_id, decision, AUTHORITATIVE, spent_today, spent_total, now)
+        if decision.needs_review:
+            self._set(session_id, status=REQUIRES_REVIEW, messages=dumps(self._messages(decision)),
+                      last_decision=dumps(decision.to_dict()), offers="[]")
+            self._log_review_request(session_id, decision)
+            raise SessionError(409, "session_state", "requires_review", decision.reason,
+                               extra={"rule_id": decision.rule_id, "session_id": session_id})
         if not decision.allowed:
             self._set(session_id, status=NOT_READY, messages=dumps(self._messages(decision)),
                       last_decision=dumps(decision.to_dict()), offers="[]")

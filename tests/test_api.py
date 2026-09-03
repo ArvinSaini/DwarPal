@@ -212,3 +212,15 @@ def test_webhook_unknown_session_is_acknowledged(app_client, world):
                "X-Razorpay-Signature": sign(body, "whsec")}
     r = app_client.post("/webhooks/razorpay", content=body, headers=headers)
     assert r.status_code == 200 and r.json()["status"] == "ok"
+
+
+def test_requires_review_is_visible_to_the_agent(app_client, world):
+    world.policies.set(dict(world.policies.get(), review_above_paise=200000))
+    s = create(app_client, SHOES).json()
+    assert s["status"] == "requires_review" and s["messages"][0]["code"] == "requires_review"
+    r = app_client.post(f"/agent/v1/checkout_sessions/{s['id']}/complete", headers={"Idempotency-Key": "c1"})
+    assert r.status_code == 409 and r.json()["code"] == "requires_review"
+    world.sessions.approve_review(s["id"], "ok")
+    assert app_client.get(f"/agent/v1/checkout_sessions/{s['id']}").json()["status"] == "ready_for_payment"
+    doc = app_client.get("/.well-known/agent-commerce.json").json()
+    assert "requires_review" in doc["session_statuses"]

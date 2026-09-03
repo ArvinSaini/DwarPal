@@ -49,7 +49,10 @@ td.payload pre { white-space: pre-wrap; font-size: 12px; background: var(--bg); 
 .badge.warn { background: var(--warn-bg); color: var(--warn); }
 .status { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; white-space: nowrap; background: var(--info-bg); color: var(--accent); }
 .status.completed, .status.active, .status.ready_for_payment { background: var(--ok-bg); color: var(--ok); }
-.status.payment_pending { background: var(--warn-bg); color: var(--warn); }
+.status.payment_pending, .status.requires_review { background: var(--warn-bg); color: var(--warn); }
+.stat.warnbox { border-color: var(--warn); background: var(--warn-bg); }
+.card.review { border-color: var(--warn); background: var(--warn-bg); }
+.card.review input { padding: 7px 10px; border: 1px solid var(--line); border-radius: 6px; font: inherit; }
 .status.not_ready_for_payment, .status.canceled, .status.revoked { background: var(--bad-bg); color: var(--bad); }
 
 .flash { background: var(--info-bg); border: 1px solid #c9d8ff; padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; }

@@ -99,7 +99,14 @@ CASES: list[Case] = [
          lambda: _input([{"id": "prod_big", "quantity": 1}],
                         catalog={**CATALOG, "prod_big": {"id": "prod_big", "title": "Big", "price_paise": 10 ** 400,
                                                          "availability": "in_stock", "category": "footwear"}})),
+    # -- review: not a denial, a human decides ---------------------------------------------------
+    Case("over_review_threshold_unapproved", "review", "a 2,499 cart above a 2,000 review threshold, no approval yet",
+         "REVIEW", "G14_REVIEW_THRESHOLD",
+         lambda: _input(SHOES, policy=dict(DEFAULT_POLICY, review_above_paise=200000))),
     # -- benign: must pass, including the boundaries ---------------------------------------------
+    Case("benign_review_approved", "benign", "the same cart once the merchant approved this exact total", "ALLOW", None,
+         lambda: GateInput(GateAgent("agt_eval", "active"), _mandate(), dict(DEFAULT_POLICY, review_above_paise=200000),
+                           CATALOG, SHOES, 0, 0, NOW, None, PREVIEW, merchant_approved=True)),
     Case("benign_shoes_and_bottle", "benign", "a normal basket", "ALLOW", None,
          lambda: _input(SHOES + [{"id": "prod_bottle", "quantity": 1}])),
     Case("benign_exactly_at_cap", "benign", "a cart exactly at the per-order cap", "ALLOW", None,
@@ -132,10 +139,12 @@ def run_eval() -> list[EvalResult]:
 def render_markdown(results: list[EvalResult]) -> str:
     abusive = [r for r in results if r.kind == "abusive"]
     benign = [r for r in results if r.kind == "benign"]
+    review = [r for r in results if r.kind == "review"]
     blocked = sum(1 for r in abusive if r.verdict == "DENY")
-    wrongly_blocked = sum(1 for r in benign if r.verdict == "DENY")
+    wrongly_blocked = sum(1 for r in benign if r.verdict != "ALLOW")
     lines = ["# Gate eval", "",
-             f"{len(results)} hand-built cases: {len(abusive)} abusive, {len(benign)} benign. Offline, no model.", "",
+             f"{len(results)} hand-built cases: {len(abusive)} abusive, {len(benign)} benign, {len(review)} escalated "
+             f"to merchant review. Offline, no model.", "",
              "| Case | Kind | Expected | Verdict | Rule | What it checks |", "|---|---|---|---|---|---|"]
     for r in results:
         ok = "" if r.verdict == r.expected_verdict and (not r.expected_rule or r.rule_id == r.expected_rule) else " (MISMATCH)"

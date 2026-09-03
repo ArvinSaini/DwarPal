@@ -14,6 +14,7 @@ from agentgate.money import rupees
 
 ALLOW = "ALLOW"
 DENY = "DENY"
+REVIEW = "REVIEW"  # not a denial: the order waits for a human at the merchant
 PREVIEW = "preview"
 AUTHORITATIVE = "authoritative"
 RETRY = "retry"
@@ -23,11 +24,12 @@ RULE_IDS = (
     "G00_WELL_FORMED", "G01_AGENT_ACTIVE", "G02_MANDATE_ACTIVE", "G03_ITEMS_KNOWN", "G04_IN_STOCK",
     "G05_SKU_NOT_BLOCKED", "G06_MERCHANT_CATEGORY", "G07_QTY_PER_LINE", "G08_ORDER_MAX",
     "G09_MANDATE_CATEGORY", "G10_PER_TXN_CAP", "G11_DAILY_CAP", "G12_TOTAL_CAP", "G13_SESSION_STATE",
+    "G14_REVIEW_THRESHOLD",
 )
 GUARD_RULE = "G99_GATE_ERROR"
 
 _EXPECTED_STATUS = {
-    PREVIEW: {None, "not_ready_for_payment", "ready_for_payment"},
+    PREVIEW: {None, "not_ready_for_payment", "ready_for_payment", "requires_review"},
     AUTHORITATIVE: {"ready_for_payment"},
     RETRY: {"payment_pending"},
 }
@@ -64,6 +66,7 @@ class GateInput:
     now: int
     session_status: str | None
     mode: str = PREVIEW
+    merchant_approved: bool = False  # a merchant approved this exact cart total for this session
 
 
 @dataclass
@@ -95,6 +98,10 @@ class Decision:
     @property
     def allowed(self) -> bool:
         return self.verdict == ALLOW
+
+    @property
+    def needs_review(self) -> bool:
+        return self.verdict == REVIEW
 
     def to_dict(self) -> dict:
         return {
@@ -273,5 +280,21 @@ def _evaluate(gi: GateInput, checks: list[Check]) -> Decision:
                     f"session is {gi.session_status!r}; a {gi.mode} evaluation requires "
                     f"{sorted(str(s) for s in expected)}", lines, total)
     ok("G13_SESSION_STATE", f"session status {gi.session_status!r} is valid for a {gi.mode} evaluation")
+
+    # G14: orders above the merchant's review threshold wait for a human unless one already approved this total.
+    threshold = policy.get("review_above_paise", 0)
+    if type(threshold) is int and threshold > 0 and total > threshold:
+        if gi.merchant_approved:
+            ok("G14_REVIEW_THRESHOLD", f"cart {rupees(total)} is above the review threshold {rupees(threshold)} "
+                                       f"and the merchant approved this exact total")
+        else:
+            detail = (f"cart {rupees(total)} is above the merchant's review threshold {rupees(threshold)}; "
+                      f"waiting for the merchant to approve or decline")
+            checks.append(Check("G14_REVIEW_THRESHOLD", False, detail))
+            return Decision(REVIEW, "G14_REVIEW_THRESHOLD", detail, checks, lines, total)
+    elif type(threshold) is int and threshold > 0:
+        ok("G14_REVIEW_THRESHOLD", f"cart {rupees(total)} is within the review threshold {rupees(threshold)}")
+    else:
+        ok("G14_REVIEW_THRESHOLD", "merchant has not set a review threshold")
 
     return Decision(ALLOW, ALLOW, f"all {len(checks)} checks passed", checks, lines, total)
