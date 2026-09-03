@@ -14,9 +14,9 @@ import time
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # run from anywhere
 
-from agentgate.config import Settings  # noqa: E402
-from agentgate.payments import PaymentRequest, PaymentsError
-from agentgate.razorpay_client import RazorpayPayments
+from dwarpal.config import Settings  # noqa: E402
+from dwarpal.payments import PaymentRequest, PaymentsError
+from dwarpal.razorpay_client import RazorpayPayments
 
 
 def main(argv=None) -> int:
@@ -36,7 +36,7 @@ def main(argv=None) -> int:
         return 1
 
     now = int(time.time())
-    req = PaymentRequest("cs_smoke", "agt_smoke", "mnd_smoke", args.amount, "AgentGate smoke test", 1,
+    req = PaymentRequest("cs_smoke", "agt_smoke", "mnd_smoke", args.amount, "Dwarpal smoke test", 1,
                          now + 20 * 60, f"smoke-{now}")
     try:
         link = pay.create_link(req)

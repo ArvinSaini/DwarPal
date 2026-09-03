@@ -1,6 +1,6 @@
 import pytest
 
-from agentgate.policy import DEFAULT_POLICY, PolicyError, PolicyStore, validate_policy
+from dwarpal.policy import DEFAULT_POLICY, PolicyError, PolicyStore, validate_policy
 
 
 def test_fresh_db_returns_default(conn, clock):

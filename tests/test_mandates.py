@@ -1,7 +1,7 @@
 import pytest
 
-from agentgate.agents import AgentStore
-from agentgate.mandates import MandateError, MandateStore
+from dwarpal.agents import AgentStore
+from dwarpal.mandates import MandateError, MandateStore
 
 
 @pytest.fixture

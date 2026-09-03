@@ -2,7 +2,7 @@ import hashlib
 
 import pytest
 
-from agentgate.ledger import GENESIS, Ledger, canonical, event_hash
+from dwarpal.ledger import GENESIS, Ledger, canonical, event_hash
 
 
 @pytest.fixture

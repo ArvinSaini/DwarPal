@@ -2,11 +2,11 @@ import json
 
 import pytest
 
-from agentgate.agents import Agent
-from agentgate.catalog import SEED_PRODUCTS
-from agentgate.gate import (ALLOW, AUTHORITATIVE, DENY, PREVIEW, RETRY, GateAgent, GateInput, GateMandate,
+from dwarpal.agents import Agent
+from dwarpal.catalog import SEED_PRODUCTS
+from dwarpal.gate import (ALLOW, AUTHORITATIVE, DENY, PREVIEW, RETRY, GateAgent, GateInput, GateMandate,
                             evaluate, gate_agent, gate_mandate)
-from agentgate.mandates import Mandate
+from dwarpal.mandates import Mandate
 
 CATALOG = {p.id: p.snapshot() for p in SEED_PRODUCTS}
 POLICY = {"max_order_paise": 500000, "allowed_categories": ["footwear", "apparel", "accessories", "fitness"],
@@ -211,7 +211,7 @@ def test_store_adapters():
 # -- G14 review threshold -------------------------------------------------------------------------
 
 def test_g14_review_threshold_and_merchant_approval():
-    from agentgate.gate import REVIEW
+    from dwarpal.gate import REVIEW
     policy = dict(POLICY, review_above_paise=200000)
     d = evaluate(gi(policy=policy))
     assert d.verdict == REVIEW and d.rule_id == "G14_REVIEW_THRESHOLD" and not d.allowed and d.needs_review
@@ -226,7 +226,7 @@ def test_g14_review_threshold_and_merchant_approval():
 # -- refund rules ---------------------------------------------------------------------------------
 
 def refund_input(**over):
-    from agentgate.gate import RefundInput
+    from dwarpal.gate import RefundInput
     base = dict(session_status="completed", captured_paise=319800, refunded_paise=0, amount_paise=69900,
                 reason="bottle out of stock at dispatch", reference="shortfall-1", seen_references=(),
                 captured_at=NOW - 3600, now=NOW, window_days=30)
@@ -235,7 +235,7 @@ def refund_input(**over):
 
 
 def test_refund_allow_has_full_trail():
-    from agentgate.gate import evaluate_refund
+    from dwarpal.gate import evaluate_refund
     d = evaluate_refund(refund_input())
     assert d.allowed and d.total_paise == 69900
     assert [c.rule for c in d.checks] == ["RF00_WELL_FORMED", "RF01_SESSION_COMPLETED", "RF02_WITHIN_CAPTURE",
@@ -256,13 +256,13 @@ def test_refund_allow_has_full_trail():
     (dict(captured_at=None), "RF04_WITHIN_WINDOW"),
 ])
 def test_refund_rules(over, rule):
-    from agentgate.gate import evaluate_refund
+    from dwarpal.gate import evaluate_refund
     d = evaluate_refund(refund_input(**over))
     assert d.verdict == DENY and d.rule_id == rule, f"{d.rule_id}: {d.reason}"
 
 
 def test_refund_window_zero_means_no_window_and_guard():
-    from agentgate.gate import evaluate_refund
+    from dwarpal.gate import evaluate_refund
     assert evaluate_refund(refund_input(now=NOW + 400 * 86400, window_days=0)).allowed
     assert evaluate_refund(refund_input(amount_paise=319800)).allowed
     assert evaluate_refund(refund_input(captured_paise="oops")).rule_id == "RF01_SESSION_COMPLETED"

@@ -1,6 +1,6 @@
 import pytest
 
-from agentgate.demo import INTENTS, SCENARIOS, run_demo, scripted_plan
+from dwarpal.demo import INTENTS, SCENARIOS, run_demo, scripted_plan
 from tests.conftest import make_ctx
 
 
@@ -39,7 +39,7 @@ def test_run_demo_scenarios_on_fakes(world, scenario, outcome):
 
 
 def test_run_demo_with_llm_planner_uses_fake_llm(world):
-    from agentgate.llm import FakeLLM
+    from dwarpal.llm import FakeLLM
 
     ctx = make_ctx(world)
     llm = FakeLLM([

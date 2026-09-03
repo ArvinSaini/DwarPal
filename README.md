@@ -1,6 +1,8 @@
-# AgentGate
+# Dwarpal
 
 **Makes a Razorpay merchant sellable to AI buyer agents, safely.**
+
+*Dwarpal* (द्वारपाल) is the gatekeeper: the one who decides who comes through the merchant's door, and on what terms.
 
 > The model proposes. Deterministic code disposes. Only the payments adapter can reach Razorpay.
 
@@ -8,7 +10,7 @@ Razorpay AI Buildathon 2026 · Track 01: AI Growth & Agentic Commerce · Python 
 
 AI assistants are starting to shop on people's behalf. NPCI's Unified Agent Protocol, Razorpay's agentic-payments
 pilots and the OpenAI/Stripe Agentic Commerce Protocol all point the same way: merchants will be asked to sell to
-machines. AgentGate is the merchant-side gateway that lets them do it without losing control: an agent-readable
+machines. Dwarpal is the merchant-side gateway that lets them do it without losing control: an agent-readable
 catalog, an ACP-shaped checkout API, a deterministic policy gate with a human review queue, per-agent spend mandates
 with reserve/commit/release accounting, Razorpay Payment Links with one gated retry, gated refunds, a hash-chained
 audit ledger that can be replayed, and a bounded cross-sell that grows the basket.
@@ -20,7 +22,7 @@ Track 01 asks: *"Every money action explainable, bounded and gated. Show the aud
 | Bar | Where it lives |
 |---|---|
 | **Explainable** | Every checkout runs the 15-rule gate and records every rule with a plain-English detail (`gate.decision` in the ledger, `decision.checks[]` in the API, the session page in the dashboard). A refused cart tells the agent which rule and why. Refunds get the same treatment (`refund.decision`). |
-| **Bounded** | Merchant policy (categories sold to agents, max order, stock, blocked SKUs, quantity per line, review threshold, refund window) plus a per-agent mandate (per order, per day, total, categories, expiry). Spend counts reserved *and* committed money, so a pending payment cannot be double-spent. `agentgate/gate.py` is a pure function. |
+| **Bounded** | Merchant policy (categories sold to agents, max order, stock, blocked SKUs, quantity per line, review threshold, refund window) plus a per-agent mandate (per order, per day, total, categories, expiry). Spend counts reserved *and* committed money, so a pending payment cannot be double-spent. `dwarpal/gate.py` is a pure function. |
 | **Gated** | The LLM never decides about money. It proposes catalog metadata (merchant approves), picks cross-sell offers from a pre-filtered candidate set (agent may accept, gate re-judges), and plans the demo buyer. `SessionService.complete` is the only path that creates a Payment Link, and only after ALLOW plus a reservation. Orders above the review threshold wait for a human. Refunds pass rules RF00 to RF04. |
 | **Audit trail** | Append-only ledger, `sha256(prev_hash + event)`. `ledger verify` proves nothing was edited; `ledger replay` re-runs every recorded decision from its recorded input and proves the reasoning; `ledger receipt <session>` exports one session; `ledger tamper <seq>` for the camera. |
 | **Failure handled** | Payment fails on the bank page → recorded, gate re-run in retry mode, old link cancelled, fresh link issued; second failure → abandon and release. Also: cap denials at complete, provider errors (release, 502, agent may retry), duplicate webhooks, a cancel Razorpay refuses (final poll; a late capture is never recorded as cancelled), revoked agents, poisoned catalog text, model outages (fail closed). |
@@ -28,23 +30,23 @@ Track 01 asks: *"Every money action explainable, bounded and gated. Show the aud
 ## Quickstart
 
 ```powershell
-git clone <this repo>; cd agentgate
+git clone <this repo>; cd dwarpal
 python -m pip install -e .                 # Python 3.11+
 copy .env.example .env                     # add rzp_test_ keys to use Razorpay; leave blank to stay fully offline
-python -m agentgate init
-python -m agentgate seed                   # Trail & Turf, 10 demo products (add --raw to see enrichment work)
-python -m agentgate agent add shopbot --per-txn 4000 --daily 8000 --total 20000
-python -m agentgate demo --scenario replan --payments fake     # refused, replans, pays: whole trail printed
-python -m agentgate serve                  # API + dashboard at http://127.0.0.1:8000
+python -m dwarpal init
+python -m dwarpal seed                   # Trail & Turf, 10 demo products (add --raw to see enrichment work)
+python -m dwarpal agent add shopbot --per-txn 4000 --daily 8000 --total 20000
+python -m dwarpal demo --scenario replan --payments fake     # refused, replans, pays: whole trail printed
+python -m dwarpal serve                  # API + dashboard at http://127.0.0.1:8000
 ```
 
 Everything above runs offline. Tests never touch the network:
 
 ```powershell
-python -m pytest -q                        # 281 tests, ~25 s
-python -m agentgate eval                   # adversarial gate eval: block rate, false-positive rate
-python -m agentgate metrics --n 50         # honest batch report
-python -m agentgate ledger replay          # re-run every recorded decision and compare
+python -m pytest -q                        # 282 tests, ~25 s
+python -m dwarpal eval                   # adversarial gate eval: block rate, false-positive rate
+python -m dwarpal metrics --n 50         # honest batch report
+python -m dwarpal ledger replay          # re-run every recorded decision and compare
 ```
 
 With Razorpay **test** keys in `.env`: `seed --push` creates the demo products as Razorpay Items, `sync-items`
@@ -118,7 +120,7 @@ ALLOW, DENY, or REVIEW (a human decides).
 Refunds run `evaluate_refund`: RF00 well-formed, RF01 session completed and captured, RF02 within the refundable
 balance, RF03 no duplicate reference, RF04 inside the refund window, same G99 guard.
 
-`python -m agentgate eval` runs 25 hand-built cases (16 abusive, 8 benign boundaries, 1 escalation to review) through
+`python -m dwarpal eval` runs 25 hand-built cases (16 abusive, 8 benign boundaries, 1 escalation to review) through
 the gate with no model: block rate 100%, false-positive rate 0%, 14 distinct rules firing. Report in `docs/gate-eval.md`.
 
 ## Sessions and failure recovery
@@ -136,13 +138,13 @@ Full tables in `docs/architecture.md`; every threat and its control in `docs/thr
 ## Demo scenarios
 
 ```powershell
-python -m agentgate demo --scenario happy      # shoes + bottle, paid
-python -m agentgate demo --scenario refused    # smartwatch: G06_MERCHANT_CATEGORY, nothing moves
-python -m agentgate demo --scenario replan     # refused, switches to shoes, pays
-python -m agentgate demo --scenario payfail    # first attempt fails, fresh link, paid on attempt 2
-python -m agentgate demo --scenario crosssell  # accepts the socks offer, pays
-python -m agentgate demo --scenario review     # above the review threshold, merchant approves, pays
-python -m agentgate demo --scenario refund     # paid, then the merchant refunds a short-shipped bottle
+python -m dwarpal demo --scenario happy      # shoes + bottle, paid
+python -m dwarpal demo --scenario refused    # smartwatch: G06_MERCHANT_CATEGORY, nothing moves
+python -m dwarpal demo --scenario replan     # refused, switches to shoes, pays
+python -m dwarpal demo --scenario payfail    # first attempt fails, fresh link, paid on attempt 2
+python -m dwarpal demo --scenario crosssell  # accepts the socks offer, pays
+python -m dwarpal demo --scenario review     # above the review threshold, merchant approves, pays
+python -m dwarpal demo --scenario refund     # paid, then the merchant refunds a short-shipped bottle
 ```
 
 Add `--planner llm` for the real tool-calling buyer and `--payments real` for real test-mode links. Each run
@@ -150,7 +152,7 @@ registers a fresh demo agent and prints the narrative and the session's ledger t
 
 ## Metrics (scripted batch, fake payments)
 
-From `python -m agentgate metrics --n 50 --seed 7` (full report in `docs/metrics-2026-09-03.md`):
+From `python -m dwarpal metrics --n 50 --seed 7` (full report in `docs/metrics-2026-09-03.md`):
 
 | Metric | Value |
 |---|---|
@@ -168,7 +170,7 @@ Nothing here measures a particular language model.
 
 ## Merchant dashboard
 
-`python -m agentgate serve`, then open `/dashboard/login?token=<MERCHANT_TOKEN>`. Pages: overview (with the review
+`python -m dwarpal serve`, then open `/dashboard/login?token=<MERCHANT_TOKEN>`. Pages: overview (with the review
 queue count), products (sync from Razorpay, propose enrichment, approve or reject each proposal side by side with the
 raw text), agents (register with caps, key shown once, revoke), policy (JSON editor), sessions (decision trail,
 payment attempts, approve/decline review, refund, cancel), ledger (verify, replay, receipt).
@@ -188,7 +190,7 @@ payment attempts, approve/decline review, refund, cancel), ledger (verify, repla
 ## Related work
 
 [MandateMesh](https://github.com/PulkitGarg31/mandatemesh) (MIT) is a buyer-side design for the same track: a
-user-signed mandate chain and a pure-function gate bound an untrusted LLM shopper. AgentGate is the merchant-side
+user-signed mandate chain and a pure-function gate bound an untrusted LLM shopper. Dwarpal is the merchant-side
 complement: the store's policy, the store's view of each agent's mandate, the store's catalog and cross-sell, a
 merchant review queue instead of a user step-up, gated refunds and offline replay. No code is shared. Protocol
 context: OpenAI/Stripe ACP, Google AP2 and UCP, NPCI UAP, UPI Circle.
@@ -202,7 +204,7 @@ merchant-facing API exists.
 ## Repo map
 
 ```
-agentgate/
+dwarpal/
   gate.py            the thesis: 15 purchase rules + 5 refund rules, pure functions, never raise
   sessions.py        state machine, reservations, review queue, retry, abandon, honest cancel, refunds
   mandates.py        per-agent caps; reserve / commit / release; refunds give budget back
@@ -222,8 +224,8 @@ agentgate/
   buyer/             demo buyer: client, planners (scripted, LLM), agent loop
   demo.py            seven scenarios
   metrics.py         batch report
-  cli.py             python -m agentgate ...
-tests/               281 offline tests
+  cli.py             python -m dwarpal ...
+tests/               282 offline tests
 docs/                architecture, threat model, decisions, protocol mapping, demo script, form answers,
                      gate eval, metrics report, design spec and plan
 scripts/smoke_razorpay.py   one-time real test-mode check

@@ -2,7 +2,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from agentgate.llm import FakeLLM, LLMClient, LLMError, parse_json_block
+from dwarpal.llm import FakeLLM, LLMClient, LLMError, parse_json_block
 
 
 def test_parse_json_block_variants():

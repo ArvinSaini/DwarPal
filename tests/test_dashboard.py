@@ -1,4 +1,4 @@
-from agentgate.catalog import Product
+from dwarpal.catalog import Product
 
 SHOES = [{"id": "prod_shoes", "quantity": 1}]
 

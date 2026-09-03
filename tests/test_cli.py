@@ -2,8 +2,8 @@ import json
 
 import pytest
 
-from agentgate.cli import main
-from agentgate.db import connect
+from dwarpal.cli import main
+from dwarpal.db import connect
 
 
 @pytest.fixture
@@ -121,7 +121,7 @@ def test_reconcile_once_and_metrics(run, tmp_path):
     assert code == 0 and "0 session" in out
     out_file = tmp_path / "m.md"
     code, out = run("metrics", "--n", "5", "--out", str(out_file))
-    assert code == 0 and out_file.exists() and "AgentGate batch metrics" in out
+    assert code == 0 and out_file.exists() and "Dwarpal batch metrics" in out
 
 
 def test_sync_and_push_need_keys(run):

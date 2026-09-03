@@ -1,6 +1,6 @@
 import pytest
 
-from agentgate.money import require_paise, rupees
+from dwarpal.money import require_paise, rupees
 
 
 def test_rupees_formats_paise():

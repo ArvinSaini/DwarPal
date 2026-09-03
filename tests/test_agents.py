@@ -1,6 +1,6 @@
 import pytest
 
-from agentgate.agents import AgentStore, hash_key
+from dwarpal.agents import AgentStore, hash_key
 
 
 def test_register_and_authenticate(conn, clock):

@@ -1,6 +1,6 @@
 import pytest
 
-from agentgate.db import dumps, loads, now_utc_day_bounds, tx
+from dwarpal.db import dumps, loads, now_utc_day_bounds, tx
 
 
 def test_schema_creates_tables(conn):

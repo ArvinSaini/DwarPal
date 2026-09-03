@@ -1,7 +1,7 @@
 # Form answers (draft; paste into the Razorpay AI Buildathon form)
 
 **Project name**
-AgentGate: makes a Razorpay merchant sellable to AI buyer agents, safely.
+Dwarpal: makes a Razorpay merchant sellable to AI buyer agents, safely.
 
 **Track**
 Track 01, AI Growth & Agentic Commerce.
@@ -10,11 +10,11 @@ Track 01, AI Growth & Agentic Commerce.
 AI assistants are starting to shop on people's behalf, and NPCI's Unified Agent Protocol, Razorpay's own
 agentic-payments pilots and the OpenAI/Stripe Agentic Commerce Protocol all point the same way: merchants will
 soon be asked to sell to machines. A Razorpay merchant today has a website built for humans and no safe way to
-let an agent buy. AgentGate is the merchant-side gateway that fixes that on Razorpay test mode.
+let an agent buy. Dwarpal is the merchant-side gateway that fixes that on Razorpay test mode.
 
 It gives the merchant an agent-readable catalog, synced from their Razorpay Items and enriched by a language
 model whose proposals the merchant approves before the store trusts them. It exposes ACP-shaped checkout-session
-endpoints with per-agent bearer keys. Every checkout passes a deterministic policy gate: fourteen ordered rules
+endpoints with per-agent bearer keys. Every checkout passes a deterministic policy gate: fifteen ordered rules
 over the store's policy (categories sold to agents, max order, stock, blocked SKUs) and the agent's spend mandate
 (per order, per day, total, categories, expiry), each recorded with a plain-English reason. Money is reserved when
 a checkout completes, committed when Razorpay captures the payment, and released on cancel or failure, so an
@@ -32,7 +32,7 @@ reasoning, on top of `ledger verify` proving the record itself.
 Where the model is: catalog enrichment, cross-sell picks, the demo buyer agent. Where it is not: any decision
 about money. An adversarial eval of 25 hand-built cases blocks 16 of 16 abusive carts with 0 of 8 benign carts
 wrongly blocked, across 14 distinct rules. A batch of fifty scripted sessions reports denials by rule, zero mandate
-overruns, failures retried and recovered, attach rate and a verified chain. The repo has 281 offline tests, a
+overruns, failures retried and recovered, attach rate and a verified chain. The repo has 282 offline tests, a
 merchant dashboard, a CLI with seven demo scenarios, and a buyer agent that replans after a refusal.
 
 **Build challenges and technical obstacles**

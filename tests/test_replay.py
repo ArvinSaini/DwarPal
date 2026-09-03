@@ -1,7 +1,7 @@
 import json
 
-from agentgate.ledger import canonical
-from agentgate.replay import ReplayReport, render_report, replay
+from dwarpal.ledger import canonical
+from dwarpal.replay import ReplayReport, render_report, replay
 
 SHOES = [{"id": "prod_shoes", "quantity": 1}]
 WATCH = [{"id": "prod_watch", "quantity": 1}]

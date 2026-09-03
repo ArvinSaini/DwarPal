@@ -1,7 +1,7 @@
-from agentgate.catalog import SEED_PRODUCTS
-from agentgate.crosssell import FakePicker, NoPicker, Offer, candidates, headroom
-from agentgate.mandates import Mandate
-from agentgate.policy import DEFAULT_POLICY
+from dwarpal.catalog import SEED_PRODUCTS
+from dwarpal.crosssell import FakePicker, NoPicker, Offer, candidates, headroom
+from dwarpal.mandates import Mandate
+from dwarpal.policy import DEFAULT_POLICY
 
 NOW = 1_756_900_000
 BY_ID = {p.id: p for p in SEED_PRODUCTS}
@@ -64,8 +64,8 @@ def test_no_candidates_no_offers():
 # -- LLM picker -----------------------------------------------------------------------------------
 
 def test_llm_picker_validates_ids_and_caps_two():
-    from agentgate.crosssell import LLMPicker
-    from agentgate.llm import FakeLLM
+    from dwarpal.crosssell import LLMPicker
+    from dwarpal.llm import FakeLLM
 
     cart = [BY_ID["prod_shoes"]]
     cands = candidates(cart, SEED_PRODUCTS, DEFAULT_POLICY, mandate(), 0, 0)
@@ -77,8 +77,8 @@ def test_llm_picker_validates_ids_and_caps_two():
 
 
 def test_llm_picker_bad_output_or_no_candidates_gives_no_offers():
-    from agentgate.crosssell import LLMPicker
-    from agentgate.llm import FakeLLM
+    from dwarpal.crosssell import LLMPicker
+    from dwarpal.llm import FakeLLM
 
     cart = [BY_ID["prod_shoes"]]
     cands = candidates(cart, SEED_PRODUCTS, DEFAULT_POLICY, mandate(), 0, 0)

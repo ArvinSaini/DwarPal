@@ -2,15 +2,15 @@ from dataclasses import dataclass
 
 import pytest
 
-from agentgate.agents import Agent, AgentStore
-from agentgate.catalog import Catalog, seed
-from agentgate.crosssell import FakePicker
-from agentgate.db import connect, init_db
-from agentgate.ledger import Ledger
-from agentgate.mandates import Mandate, MandateStore
-from agentgate.payments import FakePayments
-from agentgate.policy import PolicyStore
-from agentgate.sessions import SessionService
+from dwarpal.agents import Agent, AgentStore
+from dwarpal.catalog import Catalog, seed
+from dwarpal.crosssell import FakePicker
+from dwarpal.db import connect, init_db
+from dwarpal.ledger import Ledger
+from dwarpal.mandates import Mandate, MandateStore
+from dwarpal.payments import FakePayments
+from dwarpal.policy import PolicyStore
+from dwarpal.sessions import SessionService
 
 
 class Clock:
@@ -73,9 +73,9 @@ def world(conn, clock) -> World:
 
 def make_ctx(world: World, **settings_over):
     """An AppContext over the test world's stores."""
-    from agentgate.config import Settings
-    from agentgate.context import AppContext
-    from agentgate.enrichment import FakeEnricher
+    from dwarpal.config import Settings
+    from dwarpal.context import AppContext
+    from dwarpal.enrichment import FakeEnricher
 
     overrides = {"razorpay_webhook_secret": "whsec", "merchant_token": "merchant-secret"}
     overrides.update(settings_over)
@@ -89,7 +89,7 @@ def make_client(world: World, **settings_over):
     """A FastAPI TestClient wired to the test world. Authenticated as the world's agent by default."""
     from fastapi.testclient import TestClient
 
-    from agentgate.api import create_app
+    from dwarpal.api import create_app
 
     client = TestClient(create_app(make_ctx(world, **settings_over)))
     client.headers.update({"Authorization": f"Bearer {world.api_key}"})
