@@ -62,17 +62,29 @@ Pay the first link with **Failure** on the mock bank page. The reconciler record
 the gate in retry mode, cancels the old link and issues a fresh one (`payment.retry`). Pay the second link
 with **Success**. One reservation, committed once, two attempts on record.
 
+## Beat 5b: a human in the loop, and money back (40 s, optional if time is short)
+
+```powershell
+python -m agentgate demo --scenario review --payments fake     # order above the review threshold
+python -m agentgate demo --scenario refund --payments fake     # paid, then the merchant refunds the bottle
+```
+
+Show the review queue on the dashboard overview, approve the order, and the agent completes. Then the refund:
+`refund.decision` with rules RF00 to RF04, `refund.created`, and the agent's mandate getting budget back.
+
 ## Beat 6: audit and honest metrics (40 s)
 
 ```powershell
 python -m agentgate ledger verify
+python -m agentgate ledger replay        # every recorded decision re-run from its recorded input
 python -m agentgate ledger tamper 12
 python -m agentgate ledger verify        # BROKEN at seq 12, exit code 2
+python -m agentgate eval                 # 24 adversarial and benign cases, block rate and false positives
 python -m agentgate metrics --n 50
 ```
 
-Show the metrics table: denials by rule, zero mandate overruns, retries recovered, attach rate, chain verified,
-and the paragraph on what the batch does and does not prove.
+Show the eval table and the metrics table: denials by rule, zero mandate overruns, retries recovered, attach rate,
+chain verified, and the paragraph on what the batch does and does not prove.
 
 ## Closing (20 s)
 
