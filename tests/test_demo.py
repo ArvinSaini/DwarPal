@@ -53,6 +53,15 @@ def test_run_demo_with_llm_planner_uses_fake_llm(world):
     assert INTENTS["happy"] in llm.calls[0]["messages"][1]["content"]
 
 
+def test_review_scenario_restores_the_policy_for_later_runs(world):
+    ctx = make_ctx(world)
+    before = ctx.policies.get()
+    run_demo(ctx, "review", wait_s=30, printer=lambda s: None, sleep=lambda s: world.clock.tick(s))
+    assert ctx.policies.get() == before
+    r = run_demo(ctx, "refund", wait_s=30, printer=lambda s: None, sleep=lambda s: world.clock.tick(s))
+    assert r.outcome == "paid"
+
+
 def test_run_demo_rejects_unknown_scenario(world):
     with pytest.raises(ValueError):
         run_demo(make_ctx(world), "nope", printer=lambda s: None)
