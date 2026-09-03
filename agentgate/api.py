@@ -184,4 +184,7 @@ def create_app(ctx: AppContext) -> FastAPI:
             ctx.sessions.reconcile(session_id)
         return {"status": "ok", "event": event, "session_id": session_id}
 
+    from agentgate.dashboard import install_dashboard  # merchant pages share the same context
+
+    install_dashboard(app, ctx)
     return app

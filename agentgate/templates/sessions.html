@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Sessions{% endblock %}
+{% block content %}
+<h1>Checkout sessions</h1>
+<section class="card">
+  <table>
+    <tr><th>Session</th><th>Agent</th><th>Status</th><th>Total</th><th>Decision</th><th>Attempt</th><th>Created</th><th>Updated</th></tr>
+    {% for s in sessions %}
+    <tr>
+      <td><a href="/dashboard/sessions/{{ s.id }}">{{ s.id }}</a></td>
+      <td class="mono">{{ s.agent_id }}</td>
+      <td><span class="status {{ s.status }}">{{ s.status }}</span></td>
+      <td class="num">{{ s.totals.total_paise|rupees }}</td>
+      <td>{% if s.decision %}{{ s.decision.verdict }} <span class="mono">{{ s.decision.rule_id }}</span>{% endif %}</td>
+      <td class="num">{{ s.attempt }}</td>
+      <td class="muted">{{ s.created_at|ts }}</td>
+      <td class="muted">{{ s.updated_at|ts }}</td>
+    </tr>
+    {% endfor %}
+    {% if not sessions %}<tr><td class="muted" colspan="8">No sessions yet.</td></tr>{% endif %}
+  </table>
+</section>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Log in{% endblock %}
+{% block content %}
+<section class="card narrow">
+  <h1>Merchant login</h1>
+  <p class="muted">Paste the merchant token from your <code>.env</code> (<code>MERCHANT_TOKEN</code>).</p>
+  {% if error %}<div class="error">{{ error }}</div>{% endif %}
+  <form method="post" action="/dashboard/login">
+    <label>Token <input type="password" name="token" autofocus></label>
+    <button type="submit">Log in</button>
+  </form>
+</section>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Ledger{% endblock %}
+{% block content %}
+<h1>Audit ledger</h1>
+<div class="stats">
+  <div class="stat {{ 'good' if verify.ok else 'bad' }}"><div class="n">{{ 'verified' if verify.ok else 'BROKEN' }}</div><div class="l">{{ verify.detail }}</div></div>
+  <div class="stat"><div class="n">{{ total }}</div><div class="l">events, hash-chained</div></div>
+</div>
+<div class="actions">
+  <form method="post" action="/dashboard/ledger/verify"><button type="submit">Verify chain now</button></form>
+</div>
+<p class="muted">Head <span class="mono">{{ head }}</span>. Each event's hash covers the previous hash and the event body, so editing, inserting, deleting or reordering any past event breaks verification. Keep the head hash somewhere else to detect tail truncation.</p>
+<section class="card">
+  <h2>Events{% if total > events|length %} (last {{ events|length }} of {{ total }}){% endif %}</h2>
+  <table>
+    <tr><th>Seq</th><th>Time</th><th>Type</th><th>Actor</th><th>Session</th><th>Payload</th><th>Hash</th></tr>
+    {% for e in events %}
+    <tr>
+      <td class="num">{{ e.seq }}</td>
+      <td class="muted">{{ e.ts|ts }}</td>
+      <td class="mono">{{ e.type }}</td>
+      <td class="muted">{{ e.actor }}</td>
+      <td>{% if e.session_id %}<a href="/dashboard/sessions/{{ e.session_id }}" class="mono">{{ e.session_id }}</a>{% endif %}</td>
+      <td class="payload"><details><summary>{{ (e.payload|json)[:80] }}</summary><pre>{{ e.payload|json }}</pre></details></td>
+      <td class="mono muted">{{ e.hash[:12] }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
+{% endblock %}

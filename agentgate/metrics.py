@@ -35,7 +35,20 @@ ALLOWED_CARTS = [
     [{"id": "prod_tee", "quantity": 1}, {"id": "prod_cap", "quantity": 1}],
     [{"id": "prod_bottle", "quantity": 1}, {"id": "prod_gel", "quantity": 1}],
     [{"id": "prod_socks", "quantity": 2}, {"id": "prod_cap", "quantity": 1}],
+    [{"id": "prod_tee", "quantity": 1}],
+    [{"id": "prod_socks", "quantity": 2}, {"id": "prod_tee", "quantity": 1}],
 ]
+CART_CATEGORIES = {"prod_shoes": "footwear", "prod_socks": "apparel", "prod_tee": "apparel", "prod_mat": "fitness",
+                   "prod_bands": "fitness", "prod_cap": "accessories", "prod_bottle": "accessories",
+                   "prod_gel": "fitness"}
+
+
+def allowed_cart_for(mandate, rng: random.Random) -> list[dict]:
+    """A cart the agent's mandate categories permit, so an 'allowed' scenario really means allowed."""
+    carts = ALLOWED_CARTS
+    if mandate.categories:
+        carts = [c for c in ALLOWED_CARTS if all(CART_CATEGORIES[i["id"]] in mandate.categories for i in c)] or carts
+    return rng.choice(carts)
 REFUSED_CARTS = [
     ("G06_MERCHANT_CATEGORY", [{"id": "prod_watch", "quantity": 1}]),
     ("G04_IN_STOCK", [{"id": "prod_brace", "quantity": 1}]),
@@ -109,7 +122,7 @@ def run_batch(n: int = 50, seed: int = 7, start_ts: int = 1_756_900_000) -> Repo
                        ("apparel-bot", dict(per_txn_cap_paise=400000, daily_cap_paise=5_000_000,
                                              total_cap_paise=10_000_000, categories=["footwear", "apparel"])),
                        ("small-bot", dict(per_txn_cap_paise=400000, daily_cap_paise=5_000_000,
-                                           total_cap_paise=600000, categories=[]))):
+                                           total_cap_paise=1_500_000, categories=[]))):
         agent, _ = agents.register(name)
         ledger.append("agent.registered", "merchant", {"agent_id": agent.id, "name": name})
         mandate = mandates.create(agent.id, expires_at=start_ts + 30 * 86400, **caps)
@@ -126,12 +139,12 @@ def run_batch(n: int = 50, seed: int = 7, start_ts: int = 1_756_900_000) -> Repo
         clock.now += 60
         scenario = _pick_scenario(rng)
         scenario_counts[scenario] += 1
-        agent, mandate = rng.choice(roster)
+        agent, mandate = rng.choices(roster, weights=[0.5, 0.3, 0.2])[0]
         intended_rule = None
         if scenario == "refused":
             intended_rule, items = rng.choice(REFUSED_CARTS)
         else:
-            items = rng.choice(ALLOWED_CARTS)
+            items = allowed_cart_for(mandate, rng)
         record = {"scenario": scenario, "agent": agent.id, "accepted_offer": False, "intended_rule": intended_rule}
         s = sessions.create(agent, items, f"batch-{seed}-{i}", f"hash-{i}")
         if s["status"] == READY and s["offers"] and scenario != "refused" and rng.random() < 0.5:

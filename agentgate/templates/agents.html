@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Agents{% endblock %}
+{% block content %}
+<h1>Agents and mandates</h1>
+<p class="muted">Each agent gets a bearer key and one active spend mandate. Money is reserved when a checkout completes, committed on capture, released on cancel or failure, so an agent can never over-commit.</p>
+
+{% if error %}<div class="error">{{ error }}</div>{% endif %}
+{% if new_key %}
+<div class="keybox">
+  <strong>Agent {{ new_agent.name }} registered ({{ new_agent.id }}).</strong> This API key is shown once; give it to the agent now:
+  <div class="mono big">{{ new_key }}</div>
+  <p class="muted">Use it as <code>Authorization: Bearer {{ new_key[:12] }}…</code></p>
+</div>
+{% endif %}
+
+<div class="grid2">
+  <section class="card">
+    <h2>Register an agent</h2>
+    <form method="post" action="/dashboard/agents" class="stack">
+      <label>Name <input name="name" placeholder="shopbot" required></label>
+      <label>Per-order cap (INR) <input name="per_txn" value="4000"></label>
+      <label>Daily cap (INR) <input name="daily" value="8000"></label>
+      <label>Total cap (INR) <input name="total" value="20000"></label>
+      <label>Categories (comma separated, blank = any the store sells) <input name="categories" placeholder="footwear, apparel"></label>
+      <label>Valid for (days) <input name="days" value="7"></label>
+      <button type="submit">Register and issue key</button>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>Registered agents ({{ rows|length }})</h2>
+    <table>
+      <tr><th>Agent</th><th>Status</th><th>Mandate</th><th>Spent (total / today)</th><th></th></tr>
+      {% for r in rows %}
+      <tr>
+        <td>{{ r.agent.name }}<br><span class="mono muted">{{ r.agent.id }}</span></td>
+        <td><span class="status {{ r.agent.status }}">{{ r.agent.status }}</span></td>
+        <td>{% if r.mandate %}{{ r.mandate.per_txn_cap_paise|rupees }} / order, {{ r.mandate.daily_cap_paise|rupees }} / day, {{ r.mandate.total_cap_paise|rupees }} total<br>
+          <span class="muted">{{ r.mandate.categories|join(', ') or 'any category' }} · until {{ r.mandate.expires_at|ts }}</span>{% else %}<span class="badge warn">no active mandate</span>{% endif %}</td>
+        <td class="num">{{ r.spent_total|rupees }} / {{ r.spent_today|rupees }}</td>
+        <td>{% if r.agent.status == 'active' %}<form method="post" action="/dashboard/agents/{{ r.agent.id }}/revoke"><button type="submit" class="secondary">Revoke</button></form>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </section>
+</div>
+{% endblock %}
