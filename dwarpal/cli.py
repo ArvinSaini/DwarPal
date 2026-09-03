@@ -108,7 +108,8 @@ def build_parser() -> argparse.ArgumentParser:
     rc = ss.add_parser("receipt")
     rc.add_argument("session_id")
     tp = ss.add_parser("tamper", help="DEMO: multiply an amount in one event without re-hashing")
-    tp.add_argument("seq", type=int)
+    tp.add_argument("seq", type=int, nargs="?", default=None,
+                    help="event to alter (default: the earliest one carrying an amount)")
 
     s = sub.add_parser("review", help="list, approve or decline orders waiting for merchant review")
     ss = s.add_subparsers(dest="review_cmd", required=True)
@@ -329,10 +330,10 @@ def _dispatch(args, settings: Settings) -> int:
                 raise ConfigError(str(exc))
             return 0
         try:
-            ctx.ledger.tamper(args.seq)
+            seq = ctx.ledger.tamper(args.seq)
         except ValueError as exc:
             raise ConfigError(str(exc))
-        print(f"Tampered with event {args.seq} (amount x10, hash untouched). Run `ledger verify` to see the break.")
+        print(f"Tampered with event {seq} (amount x10, hash untouched). Run `ledger verify` to see the break.")
         return 0
 
     if cmd == "review":

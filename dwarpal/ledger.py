@@ -131,8 +131,23 @@ class Ledger:
 
     # -- demo helpers ----------------------------------------------------------------------------
 
-    def tamper(self, seq: int) -> None:
-        """Multiply the first amount field of one event by 10 WITHOUT re-hashing. For the demo only."""
+    def first_tamperable_seq(self) -> int | None:
+        """The earliest event carrying an amount the demo can alter. Used when `ledger tamper` is given no seq."""
+        for row in self.conn.execute("select seq, payload from ledger order by seq asc"):
+            payload = json.loads(row["payload"])
+            if any(type(payload.get(f)) is int for f in TAMPER_FIELDS):
+                return row["seq"]
+        return None
+
+    def tamper(self, seq: int | None = None) -> int:
+        """Multiply the first amount field of one event by 10 WITHOUT re-hashing. For the demo only.
+
+        With no seq, the earliest event carrying an amount is chosen. Returns the seq that was altered.
+        """
+        if seq is None:
+            seq = self.first_tamperable_seq()
+            if seq is None:
+                raise ValueError("no event in this ledger carries an amount to tamper with")
         row = self.conn.execute("select payload from ledger where seq = ?", (seq,)).fetchone()
         if row is None:
             raise ValueError(f"no event with seq {seq}")
@@ -145,6 +160,7 @@ class Ledger:
             raise ValueError(f"event {seq} has no amount field to tamper")
         with tx(self.conn):
             self.conn.execute("update ledger set payload = ? where seq = ?", (canonical(payload), seq))
+        return seq
 
     def receipt(self, session_id: str) -> str:
         """Markdown receipt for one session: cart, decision trail, payment attempts, chain status."""

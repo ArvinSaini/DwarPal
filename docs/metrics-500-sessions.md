@@ -1,6 +1,6 @@
 # Dwarpal batch metrics
 
-500 sessions, seed 11, 3 agents, scripted carts against the real gate and state machine with fake payments. Generated 2026-09-03 18:26 UTC.
+500 sessions, seed 11, 3 agents, scripted carts against the real gate and state machine with fake payments. Generated 2026-09-03 18:45 UTC.
 
 ## Outcomes
 

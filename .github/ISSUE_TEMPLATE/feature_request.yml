@@ -1,0 +1,51 @@
+name: Feature request
+description: Suggest a capability for Dwarpal
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Dwarpal is a defensive, merchant-side control. Requests that add offensive capability, such as attacking a
+        merchant, evading another store's controls, or generating fraudulent transactions, will be closed.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What can a merchant or an agent not do today?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you would like
+      description: The behaviour you want. If it is a new gate rule, say what it checks and when it should deny.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Policy gate or rules
+        - Mandates and spend accounting
+        - Checkout sessions and payments
+        - Refunds or merchant review
+        - Ledger, replay or audit
+        - Catalog, enrichment or cross-sell
+        - Agent API or protocol shape
+        - Dashboard or CLI
+        - Documentation or evaluation
+        - Something else
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: money-path
+    attributes:
+      label: Money path
+      options:
+        - label: This does not let a language model decide whether money moves
+          required: true

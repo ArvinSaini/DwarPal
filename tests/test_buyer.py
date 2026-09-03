@@ -178,3 +178,24 @@ def test_llm_planner_unknown_tool_is_reported(gate):
     r = BuyerAgent(gate, LLMPlanner(llm, "x", 400000)).run()
     assert r.outcome == "no_plan"
     assert "unknown tool" in [m for m in llm.calls[1]["messages"] if m["role"] == "tool"][0]["content"]
+
+
+def test_wait_polls_are_bounded_so_a_no_op_sleep_cannot_spin(gate, world):
+    """With a fake payments adapter the sleep does nothing, so the wait must be bounded by a poll budget
+    rather than only by the wall clock."""
+    world.payments.outcomes = ["pending"]
+    plan = [Action("create_checkout_session", {"items": SHOES}),
+            Action("complete_checkout_session", {"session_id": "$session"}), Action("done")]
+    calls = []
+    real_get = gate.get
+
+    def counting_get(session_id):
+        calls.append(session_id)
+        return real_get(session_id)
+
+    gate.get = counting_get
+    agent = agent_for(gate, plan, clock=lambda: 1_756_900_000, sleep=lambda s: None,
+                      wait_for_payment_s=30, poll_every_s=3)
+    r = agent.run()
+    assert r.outcome == "payment_pending"
+    assert len(calls) == 10, f"expected 30s / 3s = 10 polls, got {len(calls)}"

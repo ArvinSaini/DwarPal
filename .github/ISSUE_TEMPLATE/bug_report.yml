@@ -1,0 +1,63 @@
+name: Bug report
+description: Something behaves differently from what the documentation says
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        If the issue lets an agent spend money it should not, or makes the audit trail lie about what happened,
+        please report it privately instead: the Security tab, then "Report a vulnerability". See `SECURITY.md`.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you saw, and what you expected instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: The smallest sequence of commands or requests that shows it.
+      placeholder: |
+        python -m dwarpal --db bug.db init
+        python -m dwarpal --db bug.db seed
+        python -m dwarpal --db bug.db demo --scenario replan --payments fake
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: output
+    attributes:
+      label: Output
+      description: The error, the trail, or the decision you did not expect. Never paste real API keys.
+      render: shell
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output of `python -m dwarpal --version`, or the commit hash.
+    validations:
+      required: true
+
+  - type: input
+    id: python
+    attributes:
+      label: Python and OS
+      placeholder: "Python 3.12.4 on Windows 11"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Payments mode
+      options:
+        - fake (offline)
+        - real (Razorpay test mode)
+    validations:
+      required: true

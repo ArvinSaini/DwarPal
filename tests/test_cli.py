@@ -174,3 +174,13 @@ def test_ledger_replay_command(run):
     run("demo", "--scenario", "replan", "--payments", "fake")
     code, out = run("ledger", "replay")
     assert code == 0 and "identical" in out and "0 skipped" in out
+
+
+def test_ledger_tamper_without_a_seq(run):
+    run("init")
+    run("seed")
+    run("demo", "--scenario", "happy", "--payments", "fake")
+    code, out = run("ledger", "tamper")
+    assert code == 0 and "Tampered with event" in out
+    code, out = run("ledger", "verify")
+    assert code == 2 and "BROKEN" in out

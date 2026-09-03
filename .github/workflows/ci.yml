@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: tests (python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      - name: "Test suite (offline: fake Razorpay, fake model, fixed clock)"
+        run: python -m pytest -q
+
+      - name: Adversarial gate eval
+        # Exit code 1 if any case does not match its expected verdict and rule.
+        run: python -m dwarpal eval
+
+      - name: "Batch metrics (invariants: zero mandate overruns, every denial explained)"
+        run: python -m dwarpal metrics --n 50 --seed 7 --out /tmp/metrics.md
+
+  demo:
+    name: end-to-end demo (fake payments)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      - name: Init and seed the demo store
+        run: |
+          python -m dwarpal --db ci.db init
+          python -m dwarpal --db ci.db seed
+
+      - name: Every scenario, no network
+        run: |
+          for s in happy refused replan payfail crosssell review refund; do
+            echo "::group::scenario $s"
+            python -m dwarpal --db ci.db demo --scenario "$s" --payments fake --wait 30
+            echo "::endgroup::"
+          done
+
+      - name: Ledger verifies and every decision replays
+        run: |
+          python -m dwarpal --db ci.db ledger verify
+          python -m dwarpal --db ci.db ledger replay
+
+      - name: Tampering is detected (verify must fail afterwards)
+        run: |
+          python -m dwarpal --db ci.db ledger tamper
+          if python -m dwarpal --db ci.db ledger verify; then
+            echo "ledger verify should have failed after tampering"; exit 1
+          fi
