@@ -130,3 +130,9 @@ def test_sync_and_push_need_keys(run):
     assert code == 1 and "RAZORPAY" in out
     code, out = run("seed", "--push")
     assert code == 1 and "RAZORPAY" in out
+
+
+def test_eval_prints_table(run, tmp_path):
+    out_file = tmp_path / "eval.md"
+    code, out = run("eval", "--out", str(out_file))
+    assert code == 0 and "Block rate" in out and "100%" in out and out_file.exists()
