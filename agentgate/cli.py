@@ -109,6 +109,9 @@ def build_parser() -> argparse.ArgumentParser:
     tp = ss.add_parser("tamper", help="DEMO: multiply an amount in one event without re-hashing")
     tp.add_argument("seq", type=int)
 
+    s = sub.add_parser("eval", help="run the adversarial gate eval (offline, no model) and print the table")
+    s.add_argument("--out", help="also write the Markdown table to this file")
+
     s = sub.add_parser("metrics", help="run a scripted batch and write a Markdown report")
     s.add_argument("--n", type=int, default=50)
     s.add_argument("--seed", type=int, default=7)
@@ -307,6 +310,22 @@ def _dispatch(args, settings: Settings) -> int:
         except ValueError as exc:
             raise ConfigError(str(exc))
         print(f"Tampered with event {args.seq} (amount x10, hash untouched). Run `ledger verify` to see the break.")
+        return 0
+
+    if cmd == "eval":
+        from agentgate.evalset import render_markdown, run_eval
+
+        results = run_eval()
+        md = render_markdown(results)
+        print(md)
+        if args.out:
+            with open(args.out, "w", encoding="utf-8") as fh:
+                fh.write(md)
+        mismatches = [r for r in results if r.verdict != r.expected_verdict
+                      or (r.expected_rule and r.rule_id != r.expected_rule)]
+        if mismatches:
+            print(f"{len(mismatches)} case(s) did not match their expected outcome", file=sys.stderr)
+            return 1
         return 0
 
     if cmd == "metrics":
