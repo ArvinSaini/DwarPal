@@ -20,7 +20,7 @@ the session state machine and the domain model — in `docs/img/`, regenerated b
 | Payments adapter | `razorpay_client.py` | a `PaymentRequest` | Razorpay Payment Links, Orders, Payments | sole holder of the Razorpay keys; refuses non-test keys; `FakePayments` stands in for tests |
 | Cross-sell | `crosssell.py` | cart, catalog, headroom under every cap | the LLM endpoint | picks at most two from a deterministic candidate set; suggests only |
 | Ledger | `ledger.py` | events | SQLite | append-only hash chain; verify, receipt, tamper demo |
-| API | `api.py` | all of the above | — | bearer agent keys; ACP-shaped checkout sessions; webhook with HMAC check |
+| API | `api.py` | all of the above | — | bearer agent keys, plus Ed25519 request signatures for agents that registered a public key; ACP-shaped checkout sessions; webhook with HMAC check |
 | Dashboard | `dashboard.py` + templates | all of the above | — | merchant token cookie |
 | Buyer agent | `buyer/` | the public API only | the LLM endpoint, the API | a demo client outside the merchant trust boundary |
 | Metrics | `metrics.py` | scripted runs on the fakes | — | honest batch numbers |
@@ -107,6 +107,20 @@ Refunds are money actions too. `evaluate_refund(RefundInput)` runs RF00 (well-fo
 RF01 (session completed with a captured payment), RF02 (within the refundable balance), RF03 (no duplicate
 reference), RF04 (inside the policy's refund window), with the same G99 guard. A refund returns budget against the
 mandate's total cap but not the daily cap.
+
+## Request signing
+
+A bearer key is a secret that travels with every request. An agent that would rather not bet on that registers
+an Ed25519 public key (`agent add --pubkey`, or the dashboard); from then on the API refuses any request from it
+that does not carry `X-Agent-Timestamp`, `X-Agent-Nonce` and `X-Agent-Signature`. The signature is over
+`ts 
+ nonce 
+ METHOD 
+ path?query 
+ sha256(body)`, the timestamp must be within 300 s of the merchant's
+clock, and each nonce is accepted once per agent (`agent_nonces`, pruned after ten minutes). The check runs in
+`api.current_agent` before anything else touches the request, and every failure is a typed 401. `signing.py` is
+pure; the API supplies the clock and the nonce store. Bearer-only agents are unaffected.
 
 ## Merchant review queue
 

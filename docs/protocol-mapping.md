@@ -28,8 +28,10 @@ Deviations are listed in the discovery document at `/.well-known/agent-commerce.
 
 AP2 chains signed mandates: intent, cart and payment. DwarPal borrows the *mandate* vocabulary for the
 per-agent spend limits (per transaction, per day, total, categories, expiry) but issues them from the merchant
-side as database rows tied to a bearer key, not as user-signed verifiable credentials. Signed mandates are
-future work; the gate would gain signature rules without changing anything else.
+side as database rows, not as user-signed verifiable credentials. What is signed today is the *request*: an
+agent may register an Ed25519 public key, after which every call carries a timestamp, a single-use nonce and a
+signature over the method, path and body hash, so possession of the bearer key alone proves nothing. User-signed
+mandates remain future work; the gate would gain signature rules without changing anything else.
 
 ## Google Universal Commerce Protocol (UCP)
 

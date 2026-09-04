@@ -97,9 +97,14 @@ on complete the gate runs authoritatively, the mandate reserves the total, the a
 Link, a human pays it, polling sees the capture, the reservation commits and the ledger records
 session.completed.](docs/img/02-checkout-sequence.svg)
 
-Auth is `Authorization: Bearer agk_...` (issued per agent by the merchant). `Idempotency-Key` is required on
+Auth is `Authorization: Bearer agk_...` (issued per agent by the merchant). An agent that registers an Ed25519
+public key (`agent add --pubkey`, or the dashboard) must also sign every request: `X-Agent-Timestamp` within
+300 s of the merchant's clock, an `X-Agent-Nonce` accepted once, and an `X-Agent-Signature` over the method, the
+path with its query string and the sha256 of the body, so a leaked key alone buys nothing and a captured request
+cannot be replayed. The discovery document spells out the canonical string. `Idempotency-Key` is required on
 create and complete. Errors are `{type, code, message, param?}`; a policy denial carries `rule_id`; an order
-waiting for the merchant answers `requires_review`.
+waiting for the merchant answers `requires_review`; a signing failure is a typed 401 (`signature_required`,
+`stale_timestamp`, `bad_signature`, `replayed_nonce`).
 
 ```powershell
 $H = @{ Authorization = "Bearer agk_..."; "Idempotency-Key" = "k1" }
@@ -199,8 +204,9 @@ python -m dwarpal demo --scenario review     # above the review threshold, merch
 python -m dwarpal demo --scenario refund     # paid, then the merchant refunds a short-shipped bottle
 ```
 
-Add `--planner llm` for the real tool-calling buyer and `--payments real` for real test-mode links. Each run
-registers a fresh demo agent and prints the narrative and the session's ledger trail.
+Add `--planner llm` for the real tool-calling buyer, `--payments real` for real test-mode links, and `--sign`
+for a buyer that registers an Ed25519 public key and signs every request. Each run registers a fresh demo agent
+and prints the narrative and the session's ledger trail.
 
 ## Evaluation
 
@@ -251,7 +257,7 @@ payment attempts, approve/decline review, refund, cancel), ledger (verify, repla
   documented deviations from ACP.
 - Polling by default (reconciler thread every 3 s, or on `GET`); the webhook is optional and does nothing polling does not.
 - About 30 Payment Links per test account, so tests and metrics use the fake adapter; real calls are for the smoke script and the recorded demo.
-- Bearer keys, not signed AP2-style mandates. One merchant, one process, SQLite.
+- Mandates are merchant-issued rows, not user-signed AP2 credentials. Requests can be Ed25519-signed by the agent; the mandate itself is not. One merchant, one process, SQLite.
 - The ledger is tamper-evident, not tamper-proof: the chain alone detects modification, insertion, deletion and reordering; a cut or rewritten tail needs an anchor kept outside the database, which every `/trail` response and `ledger anchor` hand you, and `ledger verify --anchor` checks.
 - Nothing here claims conformance to ACP, AP2, UCP or UAP; `docs/protocol-mapping.md` says what is borrowed.
 

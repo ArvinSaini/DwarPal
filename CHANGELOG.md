@@ -11,6 +11,13 @@ versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   could not see. Every `GET …/trail` response and `/health` carry the same pair as `ledger_head`, so an agent that
   keeps its last trail holds an anchor the merchant cannot shrink the ledger past. The dashboard's ledger page shows
   the current anchor.
+- Ed25519 request signing. An agent registered with a public key (`agent add --pubkey`, the dashboard form) must
+  sign every request: `X-Agent-Timestamp` within 300 s, a nonce accepted once per agent, and a signature over the
+  method, the path with its query and the sha256 of the body. Typed 401s name what failed. Bearer-only agents are
+  unchanged. `agent keygen` makes a keypair for an agent operator, `GateClient(signing_key=...)` signs, and
+  `demo --sign` runs a signing buyer. The discovery document advertises `request_signing`.
+- `agents.public_key` column (added to older databases on `init`) and an `agent_nonces` table.
+- New dependency: `cryptography`.
 
 ## [0.1.0] - 2026-09-03
 

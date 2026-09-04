@@ -67,6 +67,7 @@ with **Success**. One reservation, committed once, two attempts on record.
 ```powershell
 python -m dwarpal demo --scenario review --payments fake     # order above the review threshold
 python -m dwarpal demo --scenario refund --payments fake     # paid, then the merchant refunds the bottle
+python -m dwarpal demo --scenario happy --payments fake --sign  # the buyer signs every request (ed25519)
 ```
 
 Show the review queue on the dashboard overview, approve the order, and the agent completes. Then the refund:
