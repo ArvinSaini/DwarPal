@@ -224,3 +224,14 @@ def test_requires_review_is_visible_to_the_agent(app_client, world):
     assert app_client.get(f"/agent/v1/checkout_sessions/{s['id']}").json()["status"] == "ready_for_payment"
     doc = app_client.get("/.well-known/agent-commerce.json").json()
     assert "requires_review" in doc["session_statuses"]
+
+
+# -- the trail carries an anchor the agent can keep --------------------------------------------------
+
+def test_trail_and_health_carry_the_ledger_head_as_an_anchor(app_client, world):
+    from dwarpal.ledger import parse_anchor
+    sid = create(app_client, SHOES).json()["id"]
+    head = app_client.get(f"/agent/v1/checkout_sessions/{sid}/trail").json()["ledger_head"]
+    assert head == {"seq": world.ledger.count(), "hash": world.ledger.head()}
+    assert world.ledger.verify(anchor=parse_anchor(f"{head['seq']}:{head['hash']}")).ok
+    assert app_client.get("/health", headers={"Authorization": ""}).json()["ledger_head"] == head

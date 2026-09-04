@@ -627,7 +627,9 @@ class SessionService:
     def trail_any(self, session_id: str) -> dict:
         events = self.ledger.events(session_id=session_id)
         v = self.ledger.verify()
+        a = self.ledger.anchor()
         return {"session_id": session_id, "events": [e.to_dict() for e in events], "head": self.ledger.head(),
+                "ledger_head": {"seq": a.seq, "hash": a.hash},  # keep this: it anchors the merchant's ledger
                 "verify": {"ok": v.ok, "count": v.count, "bad_seq": v.bad_seq, "detail": v.detail}}
 
     def list(self, limit: int = 50) -> list[dict]:

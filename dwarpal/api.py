@@ -109,7 +109,9 @@ def create_app(ctx: AppContext) -> FastAPI:
     @app.get("/health")
     def health():
         v = ctx.ledger.verify()
-        return {"status": "ok", "ledger_ok": v.ok, "ledger_events": v.count, "payments": ctx.payments_mode}
+        a = ctx.ledger.anchor()
+        return {"status": "ok", "ledger_ok": v.ok, "ledger_events": v.count, "payments": ctx.payments_mode,
+                "ledger_head": {"seq": a.seq, "hash": a.hash}}
 
     # -- agent API --------------------------------------------------------------------------------
 
