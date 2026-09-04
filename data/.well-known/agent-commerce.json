@@ -1,0 +1,49 @@
+{
+  "api_version": "2026-09-03",
+  "auth": "bearer",
+  "checkout_url": "http://127.0.0.1:8000/agent/v1/checkout_sessions",
+  "currency": "INR",
+  "deviations_from_acp": [
+    "payment_pending: the payer completes a Razorpay Payment Link; complete does not charge synchronously",
+    "requires_review: orders above the merchant's review threshold wait for a human; poll until ready_for_payment or change the cart",
+    "agents authenticate with a merchant-issued bearer key, plus Ed25519 request signatures once they register a public key; no shared payment token"
+  ],
+  "docs": "http://127.0.0.1:8000/docs",
+  "feed_url": "http://127.0.0.1:8000/agent/v1/products",
+  "merchant_id": "trail-and-turf",
+  "merchant_name": "Trail & Turf",
+  "payment_rails": [
+    "razorpay:payment_link"
+  ],
+  "policy": {
+    "allowed_categories": [
+      "footwear",
+      "apparel",
+      "accessories",
+      "fitness"
+    ],
+    "max_order_paise": 500000,
+    "max_qty_per_line": 5,
+    "review_above_paise": 0
+  },
+  "request_signing": {
+    "alg": "ed25519",
+    "canonical": "ts\nnonce\nMETHOD\npath?query\nsha256(body)",
+    "headers": [
+      "X-Agent-Timestamp",
+      "X-Agent-Nonce",
+      "X-Agent-Signature"
+    ],
+    "max_skew_s": 300,
+    "replay": "each nonce is accepted once per agent",
+    "required": "for agents registered with a public key"
+  },
+  "session_statuses": [
+    "not_ready_for_payment",
+    "requires_review",
+    "ready_for_payment",
+    "payment_pending",
+    "completed",
+    "canceled"
+  ]
+}
