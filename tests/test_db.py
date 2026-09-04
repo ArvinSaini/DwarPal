@@ -37,3 +37,17 @@ def test_utc_day_bounds():
 def test_json_roundtrip():
     assert loads(dumps({"b": 1, "a": [1, 2]})) == {"a": [1, 2], "b": 1}
     assert loads(None) is None
+
+
+def test_init_db_adds_the_public_key_column_to_an_older_agents_table():
+    from dwarpal.db import connect, init_db
+    c = connect(":memory:")
+    c.execute("create table agents (id text primary key, name text not null, api_key_hash text not null unique, "
+              "status text not null, created_at integer not null)")  # the 0.1.0 shape
+    c.execute("insert into agents values ('agt_old', 'old', 'h', 'active', 1)")
+    init_db(c)
+    cols = {r["name"] for r in c.execute("pragma table_info(agents)")}
+    assert "public_key" in cols
+    assert c.execute("select public_key from agents where id = 'agt_old'").fetchone()[0] is None
+    init_db(c)  # idempotent
+    assert c.execute("select count(*) from agent_nonces").fetchone()[0] == 0

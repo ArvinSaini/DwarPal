@@ -31,9 +31,19 @@ def connect(path: str) -> sqlite3.Connection:
     return conn
 
 
+# Columns added after 0.1.0. ``CREATE TABLE IF NOT EXISTS`` leaves an older table alone, so each is added here.
+_ADDED_COLUMNS = [
+    ("agents", "public_key", "TEXT"),
+]
+
+
 def init_db(conn: sqlite3.Connection) -> None:
     schema = resources.files("dwarpal").joinpath("schema.sql").read_text(encoding="utf-8")
     conn.executescript(schema)
+    for table, column, decl in _ADDED_COLUMNS:
+        present = {row["name"] for row in conn.execute(f"pragma table_info({table})")}
+        if column not in present:
+            conn.execute(f"alter table {table} add column {column} {decl}")
 
 
 @contextmanager

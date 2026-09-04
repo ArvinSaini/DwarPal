@@ -33,8 +33,18 @@ CREATE TABLE IF NOT EXISTS agents (
   name TEXT NOT NULL,
   api_key_hash TEXT NOT NULL UNIQUE,
   status TEXT NOT NULL CHECK (status IN ('active', 'revoked')),
-  created_at INTEGER NOT NULL
+  created_at INTEGER NOT NULL,
+  public_key TEXT  -- base64 Ed25519 public key; when set, every request from this agent must be signed
 );
+
+-- Nonces already accepted from signing agents, so a captured request cannot be replayed. Pruned by age.
+CREATE TABLE IF NOT EXISTS agent_nonces (
+  agent_id TEXT NOT NULL,
+  nonce TEXT NOT NULL,
+  ts INTEGER NOT NULL,
+  PRIMARY KEY (agent_id, nonce)
+);
+CREATE INDEX IF NOT EXISTS idx_agent_nonces_ts ON agent_nonces(ts);
 
 CREATE TABLE IF NOT EXISTS mandates (
   id TEXT PRIMARY KEY,
