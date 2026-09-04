@@ -1,6 +1,6 @@
 # DwarPal evaluation
 
-Generated 2026-09-03 18:45 UTC by `python scripts/make_evaluation.py` (version 0.1.0). Every number below is computed in that run; nothing is typed in by hand.
+Generated 2026-09-04 05:10 UTC by `python scripts/make_evaluation.py` (version 0.1.0). Every number below is computed in that run; nothing is typed in by hand.
 
 **What was evaluated:** the deterministic parts of DwarPal, the policy gate, the checkout state machine, the mandate accounting, the ledger, on data the repo generates for itself: hand-built adversarial and benign carts, and seeded batches of scripted sessions against a fake Razorpay. **What was not:** real Razorpay calls (need test keys), a real language model (need a key), real merchant traffic (none exists for this track). The numbers are honest about that: 100% and 0% are expected by construction for a pure function under test; the evidence is which rules fire, that the failure paths really run, and that the accounting holds across thousands of ledger events.
 
@@ -8,7 +8,7 @@ Generated 2026-09-03 18:45 UTC by `python scripts/make_evaluation.py` (version 0
 
 | Metric | Value |
 |---|---|
-| Tests passed | 286 / 286 (100.0%) |
+| Tests passed | 311 / 311 (100.0%) |
 | Tests failed | 0 |
 | Network access during tests | none (fake Razorpay, fake model, fixed clock) |
 
