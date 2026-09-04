@@ -9,14 +9,15 @@
 <text x="797.7" y="32.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.8" fill="#5f6b7a" text-anchor="start" font-weight="normal">the gate's answer</text>
 <rect x="917.036" y="22" width="12" height="12" rx="3" fill="#efeafb" stroke="#6244a8" stroke-width="1.2"/>
 <text x="935.0" y="32.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.8" fill="#5f6b7a" text-anchor="start" font-weight="normal">audit trail</text>
-<rect x="24" y="90" width="280" height="106.0" rx="8" fill="#e4f3f2" stroke="#177b7b" stroke-width="1.4"/>
+<rect x="24" y="90" width="280" height="121.5" rx="8" fill="#e4f3f2" stroke="#177b7b" stroke-width="1.4"/>
 <path d="M 24 120 H 304" stroke="#177b7b" stroke-width="1.1"/>
 <text x="36.0" y="110.0" font-family="Cascadia Mono, Consolas, DejaVu Sans Mono, monospace" font-size="12.5" fill="#1b1f24" text-anchor="start" font-weight="700">Agent</text>
 <text x="292.0" y="110.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10" fill="#177b7b" text-anchor="end" font-weight="normal">merchant issues the key</text>
 <text x="36.0" y="140.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">id · name</text>
 <text x="36.0" y="155.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">api_key_hash: sha256, shown once</text>
 <text x="36.0" y="171.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">status: active | revoked</text>
-<text x="36.0" y="186.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">revoking one stops G01 dead</text>
+<text x="36.0" y="186.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">public_key: Ed25519, optional — then every request is signed</text>
+<text x="36.0" y="202.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">revoking one stops G01 dead</text>
 <rect x="24" y="246" width="280" height="137.0" rx="8" fill="#e4f3f2" stroke="#177b7b" stroke-width="1.4"/>
 <path d="M 24 276 H 304" stroke="#177b7b" stroke-width="1.1"/>
 <text x="36.0" y="266.0" font-family="Cascadia Mono, Consolas, DejaVu Sans Mono, monospace" font-size="12.5" fill="#1b1f24" text-anchor="start" font-weight="700">Product</text>

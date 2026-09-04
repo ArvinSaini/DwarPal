@@ -159,7 +159,7 @@ def system_context() -> str:
 
     b += box(42, 176, 366, 62, "api.py — agent API",
              ["ACP-shaped checkout sessions · discovery · webhook",
-              "Bearer agk_… per agent · Idempotency-Key required"])
+              "Bearer agk_… · Ed25519 request signatures · Idempotency-Key"])
     b += box(420, 176, 362, 62, "dashboard.py — merchant console",
              ["products · agents · policy · sessions · ledger",
               "approve enrichment, review orders, refund, verify"])
@@ -477,6 +477,7 @@ def domain() -> str:
         "id · name",
         "api_key_hash: sha256, shown once",
         "status: active | revoked",
+        "public_key: Ed25519, optional — then every request is signed",
         "revoking one stops G01 dead"])[0]
     b += uml_class(24, 246, 280, "Product", "the catalog", [
         "id · title · description",
