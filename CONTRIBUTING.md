@@ -9,7 +9,7 @@ small modules, one responsibility each, and a test for every rule.
 git clone https://github.com/ArvinSaini/DwarPal.git; cd DwarPal
 python -m pip install -e ".[dev]"     # Python 3.11+
 copy .env.example .env                # optional: only needed for real Razorpay or a real model
-python -m pytest -q                   # 286 tests, offline, about 10 seconds
+python -m pytest -q                   # 311 tests, offline, about 10 seconds
 ```
 
 Nothing above needs a network connection, an API key, or Docker. The test suite uses a fake Razorpay adapter, a fake

@@ -63,7 +63,7 @@ python -m dwarpal serve                  # API + dashboard at http://127.0.0.1:8
 Everything above runs offline. Tests never touch the network:
 
 ```powershell
-python -m pytest -q                        # 286 tests, ~10 s
+python -m pytest -q                        # 311 tests, ~10 s
 python -m dwarpal eval                   # adversarial gate eval: block rate, false-positive rate
 python -m dwarpal metrics --n 50         # honest batch report
 python -m dwarpal ledger replay          # re-run every recorded decision and compare
@@ -299,7 +299,7 @@ dwarpal/
   demo.py            seven scenarios
   metrics.py         batch report
   cli.py             python -m dwarpal ...
-tests/               286 offline tests
+tests/               311 offline tests
 Evaluation.md        consolidated evaluation with computed percentages
 CONTRIBUTING.md      setup, the money-path rule, adding a gate rule, regenerating reports
 SECURITY.md          what is in scope, how to report privately, key handling
