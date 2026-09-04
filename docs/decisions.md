@@ -52,9 +52,12 @@ cart over a limit, and the metrics batch checks it.
 the cart, prior spend, the clock and the mode. `ledger replay` re-runs the gate and compares. Reason: `verify`
 proves nobody edited the record; `replay` proves the record was reasoned correctly.
 
-## D11. Bearer keys now, signed mandates later
-Per-agent keys hashed at rest were enough to make the mandate model real in the time available. AP2-style
-signed mandates would add signature rules without changing anything else. Stated in the README as future work.
+## D11. Bearer keys, signed requests, merchant-issued mandates
+Per-agent keys hashed at rest were enough to make the mandate model real. The obvious question, "what if the key
+leaks?", is answered by optional Ed25519 request signing: an agent registers a public key and from then on every
+request carries a timestamp, a single-use nonce and a signature over the method, path and body hash. The mandate
+itself stays a merchant-issued row; AP2-style user-signed mandates would add signature rules to the gate without
+changing anything else, and remain future work.
 
 ## D12. One OpenAI-compatible client, fakes everywhere
 Gemini's free tier, Groq, NVIDIA NIM and Ollama all speak the same API, so the model is interchangeable and the

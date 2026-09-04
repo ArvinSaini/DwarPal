@@ -13,7 +13,8 @@ state-machine transition, or a ledger property; none depends on a model behaving
 | Model proposes a bad category | model | enrichment says a smartwatch is footwear | validation against the allowed set; merchant approval; "other" is never sold | `test_validate_proposal_rejects` |
 | Cross-sell pushes a cart over a cap | model | suggest an expensive add-on | candidates are pre-filtered under every cap; the agent must accept via update; the gate re-judges | `test_candidates_respect_headroom`, metrics overruns = 0 |
 | Revoked agent keeps buying | ex-agent | reuse an old key | G01 on every evaluation | `test_revoked_agent_is_denied_by_the_gate_not_by_auth` |
-| Stolen API key | attacker | present a valid key | keys are hashed at rest; every purchase is still bounded by the mandate and visible in the ledger; the merchant revokes | `test_key_is_hashed_at_rest` |
+| Stolen API key | attacker | present a valid key | keys are hashed at rest; an agent registered with an Ed25519 public key must also sign every request, so the key alone is useless; every purchase is still bounded by the mandate and visible in the ledger; the merchant revokes | `test_key_is_hashed_at_rest`, `test_signing_agent_must_sign_every_request` |
+| Captured signed request replayed, or a signature reused on another body | attacker on the wire | resend a valid request; move a signature to a different cart | each nonce is accepted once per agent; the timestamp must be within 300 s; the signature covers the method, the path with its query and the body hash | `test_replay_stale_wrong_key_wrong_body_and_garbage_are_refused` |
 | Forged webhook | attacker | post a fake `payment.captured` | HMAC signature check; duplicate event ids ignored; the webhook only triggers a poll of Razorpay, it never completes a session by itself | `test_webhook_signature_dedupe_and_reconcile` |
 | Provider says the cancel failed because the customer just paid | Razorpay timing | the ledger would say "cancelled" while money moved | one final poll; a late capture completes the session; `cancel_failed` otherwise | `test_cancel_when_provider_cancel_fails` |
 | Over-refund or duplicate refund | merchant operator error | refund more than captured, or twice for the same shortfall | RF02, RF03; refunds are gated and logged like payments | `test_refund_is_gated` |
@@ -26,8 +27,9 @@ state-machine transition, or a ledger property; none depends on a model behaving
 
 ## Out of scope, stated plainly
 
-- The merchant token and agent keys are bearer secrets over plain HTTP in the demo. Run behind TLS in any
-  real deployment.
+- The merchant token is a bearer secret over plain HTTP in the demo, and so is an agent key unless the agent
+  registered a public key. Run behind TLS in any real deployment; signing narrows what a captured key or request
+  is worth, it does not replace transport security.
 - Signed mandates (AP2-style verifiable credentials) are future work; today the merchant's database is the root
   of trust for what an agent may spend.
 - The ledger is tamper-evident, not tamper-proof: a cut or rewritten tail is only caught by comparing against an

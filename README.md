@@ -279,7 +279,8 @@ dwarpal/
   evalset.py         adversarial gate eval
   catalog.py         products, seed data, agent feed
   policy.py          merchant policy document
-  agents.py          agent keys (hashed at rest)
+  agents.py          agent keys (hashed at rest), optional Ed25519 public key, nonce memory
+  signing.py         Ed25519 keypairs, canonical request string, sign / verify; pure
   crosssell.py       candidates (deterministic) + fake / LLM picker
   enrichment.py      proposals (pending until approved) + fake / LLM enricher
   llm.py             one OpenAI-compatible client + FakeLLM

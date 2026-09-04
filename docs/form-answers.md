@@ -14,7 +14,7 @@ let an agent buy. DwarPal is the merchant-side gateway that fixes that on Razorp
 
 It gives the merchant an agent-readable catalog, synced from their Razorpay Items and enriched by a language
 model whose proposals the merchant approves before the store trusts them. It exposes ACP-shaped checkout-session
-endpoints with per-agent bearer keys. Every checkout passes a deterministic policy gate: fifteen ordered rules
+endpoints with per-agent bearer keys, optionally hardened with Ed25519 request signatures. Every checkout passes a deterministic policy gate: fifteen ordered rules
 over the store's policy (categories sold to agents, max order, stock, blocked SKUs) and the agent's spend mandate
 (per order, per day, total, categories, expiry), each recorded with a plain-English reason. Money is reserved when
 a checkout completes, committed when Razorpay captures the payment, and released on cancel or failure, so an
