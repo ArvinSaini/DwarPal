@@ -164,3 +164,14 @@ def test_ledger_page_shows_the_anchor_to_keep(app_client, world):
     assert r.status_code == 200
     assert f"{world.ledger.count()}:{world.ledger.head()}" in r.text  # the <seq>:<hash> anchor, copy-pasteable
     assert "ledger verify --anchor" in r.text
+
+
+def test_register_an_agent_with_a_public_key_from_the_dashboard(app_client, world):
+    from dwarpal.signing import generate_keypair
+    login(app_client)
+    _, public = generate_keypair()
+    r = app_client.post("/dashboard/agents", data={"name": "signer", "public_key": public})
+    assert r.status_code == 200 and "agk_" in r.text and "signs requests" in r.text
+    assert world.agents.all()[-1].public_key == public
+    r = app_client.post("/dashboard/agents", data={"name": "bad", "public_key": "nope"})
+    assert r.status_code == 200 and "Error" in r.text and world.agents.all()[-1].name == "signer"

@@ -176,7 +176,7 @@ def install_dashboard(app: FastAPI, ctx) -> None:
     @router.post("/agents", response_class=HTMLResponse)
     def agents_register(request: Request, _=Depends(require_merchant), name: str = Form(""), per_txn: str = Form("4000"),
                         daily: str = Form("8000"), total: str = Form("20000"), categories: str = Form(""),
-                        days: str = Form("7")):
+                        days: str = Form("7"), public_key: str = Form("")):
         try:
             if not name.strip():
                 raise ValueError("name is required")
@@ -186,8 +186,12 @@ def install_dashboard(app: FastAPI, ctx) -> None:
             if ndays < 1:
                 raise ValueError("days must be at least 1")
             cats = [c.strip() for c in categories.split(",") if c.strip()]
-            agent, key = ctx.agents.register(name)
-            ctx.ledger.append("agent.registered", "merchant", {"agent_id": agent.id, "name": agent.name})
+            try:
+                agent, key = ctx.agents.register(name, public_key=public_key)
+            except ValueError as exc:
+                raise ValueError(f"public key: {exc}")
+            ctx.ledger.append("agent.registered", "merchant",
+                              {"agent_id": agent.id, "name": agent.name, "signs_requests": agent.signs_requests})
             mandate = ctx.mandates.create(agent.id, caps[0], caps[1], caps[2], cats, ctx.clock() + ndays * 86400)
             ctx.ledger.append("mandate.created", "merchant", mandate.to_dict())
         except ValueError as exc:
