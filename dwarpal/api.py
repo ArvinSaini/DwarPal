@@ -18,6 +18,9 @@ from dwarpal.context import AppContext
 from dwarpal.db import tx
 from dwarpal.ledger import canonical
 from dwarpal.razorpay_client import verify_webhook_signature
+from dwarpal.signing import (CANONICAL_FORM, HEADER_NONCE, HEADER_SIGNATURE, HEADER_TIMESTAMP, MAX_SKEW_S,
+                             SIGNING_ALG)
+from dwarpal.signing import verify as verify_request_signature
 from dwarpal.sessions import CANCELED, COMPLETED, NOT_READY, PENDING, READY, REQUIRES_REVIEW, SessionError
 
 API_VERSION = "2026-09-03"
@@ -69,13 +72,38 @@ def create_app(ctx: AppContext) -> FastAPI:
         return JSONResponse(status_code=400, content={"type": "invalid_request", "code": "invalid",
                                                       "message": str(exc.errors()[:1])})
 
-    def current_agent(authorization: str | None = Header(default=None)):
+    async def require_signature(request: Request, agent) -> None:
+        """An agent that registered a public key must sign every request; a leaked bearer key alone buys nothing."""
+        ts_raw, nonce, sig = (request.headers.get(h) for h in (HEADER_TIMESTAMP, HEADER_NONCE, HEADER_SIGNATURE))
+        if not (ts_raw and nonce and sig):
+            raise ApiError(401, "unauthorized", "signature_required",
+                           f"this agent registered a public key: every request needs {HEADER_TIMESTAMP}, "
+                           f"{HEADER_NONCE} and {HEADER_SIGNATURE} (see request_signing in the discovery document)")
+        try:
+            ts = int(ts_raw)
+        except ValueError:
+            raise ApiError(401, "unauthorized", "malformed_signature", f"{HEADER_TIMESTAMP} must be unix seconds")
+        now = ctx.clock()
+        if abs(now - ts) > MAX_SKEW_S:
+            raise ApiError(401, "unauthorized", "stale_timestamp",
+                           f"{HEADER_TIMESTAMP} is more than {MAX_SKEW_S} s away from the merchant's clock")
+        target = request.url.path + (f"?{request.url.query}" if request.url.query else "")
+        if not verify_request_signature(agent.public_key, sig, ts, nonce, request.method, target, await request.body()):
+            raise ApiError(401, "unauthorized", "bad_signature",
+                           "the signature does not verify against this agent's public key for this exact request")
+        if not ctx.agents.remember_nonce(agent.id, nonce, now):
+            raise ApiError(401, "unauthorized", "replayed_nonce", f"{HEADER_NONCE} was already used by this agent")
+        ctx.agents.prune_nonces(now, 2 * MAX_SKEW_S)
+
+    async def current_agent(request: Request, authorization: str | None = Header(default=None)):
         if not authorization or not authorization.lower().startswith("bearer "):
             raise ApiError(401, "unauthorized", "missing_api_key",
                            "Authorization: Bearer <agent api key> is required")
         agent = ctx.agents.authenticate(authorization[7:].strip())
         if agent is None:
             raise ApiError(401, "unauthorized", "invalid_api_key", "unknown API key")
+        if agent.signs_requests:
+            await require_signature(request, agent)
         return agent
 
     # -- discovery and health ---------------------------------------------------------------------
@@ -90,6 +118,10 @@ def create_app(ctx: AppContext) -> FastAPI:
             "currency": "INR",
             "api_version": API_VERSION,
             "auth": "bearer",
+            "request_signing": {"alg": SIGNING_ALG, "required": "for agents registered with a public key",
+                                "headers": [HEADER_TIMESTAMP, HEADER_NONCE, HEADER_SIGNATURE],
+                                "canonical": CANONICAL_FORM, "max_skew_s": MAX_SKEW_S,
+                                "replay": "each nonce is accepted once per agent"},
             "feed_url": f"{base}/agent/v1/products",
             "checkout_url": f"{base}/agent/v1/checkout_sessions",
             "payment_rails": ["razorpay:payment_link"],
@@ -101,7 +133,8 @@ def create_app(ctx: AppContext) -> FastAPI:
                 "payment_pending: the payer completes a Razorpay Payment Link; complete does not charge synchronously",
                 "requires_review: orders above the merchant's review threshold wait for a human; poll until "
                 "ready_for_payment or change the cart",
-                "agents authenticate with a merchant-issued bearer key; no shared payment token",
+                "agents authenticate with a merchant-issued bearer key, plus Ed25519 request signatures once they "
+                "register a public key; no shared payment token",
             ],
             "docs": f"{base}/docs",
         }

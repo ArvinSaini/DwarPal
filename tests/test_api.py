@@ -2,6 +2,8 @@ import hashlib
 import hmac
 import json
 
+import pytest
+
 from tests.conftest import make_client
 
 SHOES = [{"id": "prod_shoes", "quantity": 1}]
@@ -235,3 +237,80 @@ def test_trail_and_health_carry_the_ledger_head_as_an_anchor(app_client, world):
     assert head == {"seq": world.ledger.count(), "hash": world.ledger.head()}
     assert world.ledger.verify(anchor=parse_anchor(f"{head['seq']}:{head['hash']}")).ok
     assert app_client.get("/health", headers={"Authorization": ""}).json()["ledger_head"] == head
+
+
+# -- request signing: an agent with a public key must sign every request -------------------------------
+
+def signed_headers(private_b64, method, target, body=b"", ts=None, nonce=None, clock=None):
+    import uuid
+
+    from dwarpal.signing import HEADER_NONCE, HEADER_SIGNATURE, HEADER_TIMESTAMP, sign
+    ts = clock.now if ts is None else ts
+    nonce = nonce or uuid.uuid4().hex
+    return {HEADER_TIMESTAMP: str(ts), HEADER_NONCE: nonce,
+            HEADER_SIGNATURE: sign(private_b64, ts, nonce, method, target, body)}
+
+
+@pytest.fixture
+def signer(world):
+    from dwarpal.signing import generate_keypair
+    private, public = generate_keypair()
+    agent, key = world.agents.register("signer", public_key=public)
+    world.mandates.create(agent.id, 400000, 800000, 2000000, [], world.clock.now + 7 * 86400)
+    client = make_client(world)
+    client.headers.update({"Authorization": f"Bearer {key}"})
+    return client, private, agent
+
+
+def test_signing_agent_must_sign_every_request(signer, world):
+    client, private, _ = signer
+    r = client.get("/agent/v1/products")
+    assert r.status_code == 401 and r.json()["code"] == "signature_required"
+    target = "/agent/v1/products?q=bottle"  # the query string is part of what is signed
+    r = client.get(target, headers=signed_headers(private, "GET", target, clock=world.clock))
+    assert r.status_code == 200 and r.json()["count"] == 1
+    body = json.dumps({"items": SHOES}).encode()
+    h = signed_headers(private, "POST", "/agent/v1/checkout_sessions", body, clock=world.clock)
+    r = client.post("/agent/v1/checkout_sessions", content=body,
+                    headers={**h, "Idempotency-Key": "s1", "Content-Type": "application/json"})
+    assert r.status_code == 201 and r.json()["status"] == "ready_for_payment"
+
+
+def test_replay_stale_wrong_key_wrong_body_and_garbage_are_refused(signer, world):
+    from dwarpal.signing import generate_keypair
+    client, private, _ = signer
+    target = "/agent/v1/products"
+    h = signed_headers(private, "GET", target, clock=world.clock)
+    assert client.get(target, headers=h).status_code == 200
+    r = client.get(target, headers=h)  # the very same request again
+    assert r.status_code == 401 and r.json()["code"] == "replayed_nonce"
+    r = client.get(target, headers=signed_headers(private, "GET", target, ts=world.clock.now - 301, clock=world.clock))
+    assert r.status_code == 401 and r.json()["code"] == "stale_timestamp"
+    r = client.get(target, headers=signed_headers(private, "GET", target, ts=world.clock.now + 301, clock=world.clock))
+    assert r.status_code == 401 and r.json()["code"] == "stale_timestamp"
+    other_private, _ = generate_keypair()
+    r = client.get(target, headers=signed_headers(other_private, "GET", target, clock=world.clock))
+    assert r.status_code == 401 and r.json()["code"] == "bad_signature"
+    h = signed_headers(private, "GET", target, clock=world.clock)
+    h["X-Agent-Signature"] = "AAAA" + h["X-Agent-Signature"][4:]
+    r = client.get(target, headers=h)
+    assert r.status_code == 401 and r.json()["code"] == "bad_signature"
+    h = signed_headers(private, "GET", target, clock=world.clock)
+    h["X-Agent-Timestamp"] = "yesterday"
+    r = client.get(target, headers=h)
+    assert r.status_code == 401 and r.json()["code"] == "malformed_signature"
+    body, other = json.dumps({"items": SHOES}).encode(), json.dumps({"items": WATCH}).encode()
+    h = signed_headers(private, "POST", "/agent/v1/checkout_sessions", other, clock=world.clock)
+    r = client.post("/agent/v1/checkout_sessions", content=body,
+                    headers={**h, "Idempotency-Key": "s2", "Content-Type": "application/json"})
+    assert r.status_code == 401 and r.json()["code"] == "bad_signature"  # a signature covers one body only
+
+
+def test_bearer_only_agents_are_unaffected_and_discovery_advertises_signing(app_client):
+    assert app_client.get("/agent/v1/products").status_code == 200
+    doc = app_client.get("/.well-known/agent-commerce.json", headers={"Authorization": ""}).json()
+    assert doc["auth"] == "bearer"
+    rs = doc["request_signing"]
+    assert rs["alg"] == "ed25519" and rs["max_skew_s"] == 300
+    assert rs["headers"] == ["X-Agent-Timestamp", "X-Agent-Nonce", "X-Agent-Signature"]
+    assert "sha256(body)" in rs["canonical"]
