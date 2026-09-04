@@ -56,6 +56,7 @@ copy .env.example .env                     # add rzp_test_ keys to use Razorpay;
 python -m dwarpal init
 python -m dwarpal seed                   # Trail & Turf, 10 demo products (add --raw to see enrichment work)
 python -m dwarpal agent add shopbot --per-txn 4000 --daily 8000 --total 20000
+python -m dwarpal agent keygen           # Ed25519 keypair for an agent that will sign its requests (agent add --pubkey)
 python -m dwarpal demo --scenario replan --payments fake     # refused, replans, pays: whole trail printed
 python -m dwarpal serve                  # API + dashboard at http://127.0.0.1:8000
 ```
@@ -67,6 +68,7 @@ python -m pytest -q                        # 311 tests, ~10 s
 python -m dwarpal eval                   # adversarial gate eval: block rate, false-positive rate
 python -m dwarpal metrics --n 50         # honest batch report
 python -m dwarpal ledger replay          # re-run every recorded decision and compare
+python -m dwarpal export --out data      # discovery document, feed and policy as files
 ```
 
 With Razorpay **test** keys in `.env`: `seed --push` creates the demo products as Razorpay Items, `sync-items`
