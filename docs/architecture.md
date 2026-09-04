@@ -23,6 +23,8 @@ the session state machine and the domain model — in `docs/img/`, regenerated b
 | API | `api.py` | all of the above | — | bearer agent keys, plus Ed25519 request signatures for agents that registered a public key; ACP-shaped checkout sessions; webhook with HMAC check |
 | Dashboard | `dashboard.py` + templates | all of the above | — | merchant token cookie |
 | Buyer agent | `buyer/` | the public API only | the LLM endpoint, the API | a demo client outside the merchant trust boundary |
+| Request signing | `signing.py` | the headers and body of one request | nothing: pure, no clock, no I/O | Ed25519 verify; the API supplies the clock and the nonce store, and refuses before anything else reads the request |
+| Export | `export.py` | the discovery document, the feed, the policy | the filesystem | writes exactly what the API serves, so `data/` cannot drift from the server (CI checks) |
 | Metrics | `metrics.py` | scripted runs on the fakes | — | honest batch numbers |
 
 ## Where the model is, and is not
