@@ -62,6 +62,24 @@ class VerifyResult:
     detail: str
 
 
+@dataclass(frozen=True)
+class Anchor:
+    """The head of the chain at some moment: keep it outside the database and verification can also
+    prove the tail was not cut or rewritten since then."""
+    seq: int
+    hash: str
+
+    def __str__(self) -> str:
+        return f"{self.seq}:{self.hash}"
+
+
+def parse_anchor(text: str) -> Anchor:
+    seq, sep, digest = (text or "").strip().partition(":")
+    if not sep or not seq.isdigit() or len(digest) != 64 or any(c not in "0123456789abcdef" for c in digest):
+        raise ValueError("anchor must look like <seq>:<sha256 hex>, as printed by `ledger anchor`")
+    return Anchor(int(seq), digest)
+
+
 class Ledger:
     def __init__(self, conn, clock: Callable[[], int] | None = None):
         self.conn = conn
@@ -110,10 +128,17 @@ class Ledger:
     def count(self) -> int:
         return self.conn.execute("select count(*) from ledger").fetchone()[0]
 
-    def verify(self) -> VerifyResult:
-        prev, expected_seq, n = GENESIS, 1, 0
+    def anchor(self) -> Anchor:
+        row = self.conn.execute("select seq, hash from ledger order by seq desc limit 1").fetchone()
+        return Anchor(row["seq"], row["hash"]) if row else Anchor(0, GENESIS)
+
+    def verify(self, anchor: Anchor | None = None) -> VerifyResult:
+        """Recompute every hash. With an anchor, also require that event to still be there, unchanged."""
+        prev, expected_seq, n, at_anchor = GENESIS, 1, 0, None
         for row in self.conn.execute("select * from ledger order by seq asc"):
             n += 1
+            if anchor is not None and row["seq"] == anchor.seq:
+                at_anchor = row["hash"]
             if row["seq"] != expected_seq:
                 return VerifyResult(False, n, row["seq"], f"seq {row['seq']} out of order; expected {expected_seq}")
             try:
@@ -127,7 +152,16 @@ class Ledger:
             if event_hash(prev, body) != row["hash"]:
                 return VerifyResult(False, n, row["seq"], f"seq {row['seq']}: hash mismatch, the event was modified")
             prev, expected_seq = row["hash"], expected_seq + 1
-        return VerifyResult(True, n, None, "ledger chain verified")
+        if anchor is None or anchor.seq == 0:
+            return VerifyResult(True, n, None, "ledger chain verified")
+        if n < anchor.seq:
+            return VerifyResult(False, n, anchor.seq,
+                                f"ledger is shorter than the anchor: {n} events, anchor at seq {anchor.seq}; "
+                                f"the tail was cut")
+        if at_anchor != anchor.hash:
+            return VerifyResult(False, n, anchor.seq, f"seq {anchor.seq}: hash is different from the anchor; "
+                                                      f"the tail was rewritten")
+        return VerifyResult(True, n, None, f"ledger chain verified; anchor at seq {anchor.seq} present")
 
     # -- demo helpers ----------------------------------------------------------------------------
 

@@ -106,3 +106,52 @@ def test_tamper_without_a_seq_raises_when_nothing_carries_an_amount(ledger):
     assert ledger.first_tamperable_seq() is None
     with pytest.raises(ValueError):
         ledger.tamper()
+
+
+# -- anchoring: the head (seq, hash) kept outside the ledger detects a shortened or re-hashed tail ----
+
+def test_anchor_is_the_head_seq_and_hash(ledger):
+    from dwarpal.ledger import Anchor, parse_anchor
+    assert ledger.anchor() == Anchor(0, GENESIS)
+    a = ledger.append("a", "x", {"n": 1})
+    b = ledger.append("b", "x", {"n": 2})
+    anchor = ledger.anchor()
+    assert anchor == Anchor(2, b.hash)
+    assert str(anchor) == f"2:{b.hash}"
+    assert parse_anchor(str(anchor)) == anchor
+
+
+def test_verify_with_anchor_passes_when_the_chain_still_contains_it(ledger):
+    ledger.append("a", "x", {"n": 1})
+    anchor = ledger.anchor()
+    ledger.append("b", "x", {"n": 2})  # the chain may grow past the anchor
+    r = ledger.verify(anchor=anchor)
+    assert r.ok and r.count == 2 and "anchor" in r.detail
+
+
+def test_verify_with_anchor_detects_a_truncated_tail(ledger):
+    ledger.append("a", "x", {"n": 1})
+    ledger.append("b", "x", {"n": 2})
+    anchor = ledger.anchor()
+    ledger.conn.execute("delete from ledger where seq = 2")
+    assert ledger.verify().ok  # plain verification cannot see a cut tail...
+    r = ledger.verify(anchor=anchor)  # ...the anchor can
+    assert not r.ok and r.bad_seq == 2 and "shorter" in r.detail
+
+
+def test_verify_with_anchor_detects_a_rewritten_tail(ledger):
+    ledger.append("a", "x", {"n": 1})
+    ledger.append("b", "x", {"n": 2})
+    anchor = ledger.anchor()
+    ledger.conn.execute("delete from ledger where seq = 2")
+    ledger.append("b", "x", {"n": 999})  # same length, different history
+    assert ledger.verify().ok
+    r = ledger.verify(anchor=anchor)
+    assert not r.ok and r.bad_seq == 2 and "different" in r.detail
+
+
+def test_parse_anchor_rejects_garbage():
+    from dwarpal.ledger import parse_anchor
+    for bad in ("", "abc", "2", "x:" + "0" * 64, "2:nothex", "-1:" + "0" * 64, "2:" + "0" * 63):
+        with pytest.raises(ValueError):
+            parse_anchor(bad)
