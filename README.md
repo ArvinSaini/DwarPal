@@ -14,7 +14,7 @@ Razorpay AI Buildathon 2026 · Track 01: AI Growth & Agentic Commerce · Python 
 
 [Quickstart](#quickstart) · [How it fits together](#how-it-fits-together) · [What an agent sees](#what-an-agent-sees) ·
 [The gate](#the-gate) · [Sessions and failure recovery](#sessions-and-failure-recovery) · [Data model](#data-model) ·
-[Evaluation](#evaluation) · [Limitations](#honest-limitations)
+[Evaluation](#evaluation) · [Scope](#scope-and-guarantees)
 
 AI assistants are starting to shop on people's behalf. NPCI's Unified Agent Protocol, Razorpay's agentic-payments
 pilots and the OpenAI/Stripe Agentic Commerce Protocol all point the same way: merchants will be asked to sell to
@@ -252,17 +252,20 @@ queue count), products (sync from Razorpay, propose enrichment, approve or rejec
 raw text), agents (register with caps, key shown once, revoke), policy (JSON editor), sessions (decision trail,
 payment attempts, approve/decline review, refund, cancel), ledger (verify, replay, receipt).
 
-## Honest limitations
+## Scope and guarantees
 
-- Test mode only. The adapter refuses any key that is not `rzp_test_`.
-- Razorpay has no public delegated-payment token for agents yet, so a human pays the link. "End to end" means the
-  agent does everything up to and after the payment authorisation; `payment_pending` and `requires_review` are
-  documented deviations from ACP.
-- Polling by default (reconciler thread every 3 s, or on `GET`); the webhook is optional and does nothing polling does not.
-- About 30 Payment Links per test account, so tests and metrics use the fake adapter; real calls are for the smoke script and the recorded demo.
-- Mandates are merchant-issued rows, not user-signed AP2 credentials. Requests can be Ed25519-signed by the agent; the mandate itself is not. One merchant, one process, SQLite.
-- The ledger is tamper-evident, not tamper-proof: the chain alone detects modification, insertion, deletion and reordering; a cut or rewritten tail needs an anchor kept outside the database, which every `/trail` response and `ledger anchor` hand you, and `ledger verify --anchor` checks.
-- Nothing here claims conformance to ACP, AP2, UCP or UAP; `docs/protocol-mapping.md` says what is borrowed.
+What DwarPal promises, what holds each promise, and where it stops. The middle column is a mechanism, not a hope.
+
+| Boundary | What holds it | Where it stops |
+|---|---|---|
+| **Razorpay test mode only** | the adapter refuses any key that is not `rzp_test_`; this is a control, not a gap | going live is one guard in `razorpay_client.py`, after a real security review |
+| **A human pays the link** | Razorpay has no public delegated-payment token for agents yet; the agent does everything up to and after the authorisation, and `payment_pending` / `requires_review` are documented deviations from ACP | when a token exists it is one method on `PaymentsPort`; the gate and the state machine do not change |
+| **Bearer keys, signed requests** | keys hashed at rest; an agent that registers an Ed25519 public key must sign every request (timestamp, single-use nonce, method, path, body hash), so a leaked key alone buys nothing | the *mandate* is still a merchant-issued row, not a user-signed AP2 credential; run behind TLS |
+| **Tamper-evident ledger** | the hash chain catches edits, insertions, deletions and reordering; an anchor (`ledger anchor`, every `/trail` response) catches a cut or rewritten tail | only if someone kept an anchor; tamper-evident, not tamper-proof |
+| **Polling by default** | the reconciler polls every 3 s and on every `GET`; it works without a public URL, which is what a demo has | the webhook is optional and does nothing polling does not |
+| **About 30 Payment Links per test account** | tests and metrics run on `FakePayments`; real links are for the smoke script and the recorded demo | Razorpay's limit, not ours |
+| **One merchant, one process, SQLite** | WAL mode and a re-entrant lock keep API threads and the reconciler from interleaving writes | Postgres replaces the connection layer without touching the domain code; multi-merchant is a schema change |
+| **No protocol conformance claimed** | ACP-shaped endpoints and AP2 mandate vocabulary; `docs/protocol-mapping.md` says exactly what is borrowed | none of ACP, AP2, UCP or UAP has a conformance suite this was run against |
 
 ## Future work
 
