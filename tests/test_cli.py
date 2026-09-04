@@ -205,3 +205,19 @@ def test_ledger_anchor_detects_a_cut_tail(run):
     assert code == 2 and "shorter" in out  # ...and visible with the anchor
     code, out = run("ledger", "verify", "--anchor", "garbage")
     assert code == 1
+
+
+def test_agent_keygen_add_with_pubkey_list_and_signed_demo(run):
+    run("init")
+    run("seed")
+    code, out = run("agent", "keygen")
+    assert code == 0 and "private key" in out.lower() and "public key" in out.lower()
+    public = [line.split()[-1] for line in out.splitlines() if line.lower().startswith("public key")][0]
+    code, out = run("agent", "add", "signer", "--pubkey", public)
+    assert code == 0 and "sign" in out.lower()
+    code, out = run("agent", "add", "bad", "--pubkey", "nope")
+    assert code == 1
+    code, out = run("agent", "list")
+    assert code == 0 and "signed" in out.lower()
+    code, out = run("demo", "--scenario", "happy", "--payments", "fake", "--sign")
+    assert code == 0 and "ed25519" in out.lower()

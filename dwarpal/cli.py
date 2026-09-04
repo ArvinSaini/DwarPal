@@ -17,6 +17,7 @@ from dwarpal.ledger import parse_anchor
 from dwarpal.money import rupees
 from dwarpal.payments import PaymentsError
 from dwarpal.policy import PolicyError
+from dwarpal.signing import generate_keypair
 
 
 class ConfigError(Exception):
@@ -79,6 +80,9 @@ def build_parser() -> argparse.ArgumentParser:
     a.add_argument("--total", default="20000", help="total cap in rupees (default 20000)")
     a.add_argument("--categories", default="", help="comma-separated categories (blank = any the store sells)")
     a.add_argument("--days", type=int, default=7, help="mandate validity in days (default 7)")
+    a.add_argument("--pubkey", help="base64 Ed25519 public key; from then on the agent must sign every request")
+    ss.add_parser("keygen", help="generate an Ed25519 keypair for an agent operator (the merchant never sees "
+                                 "the private half)")
     r = ss.add_parser("revoke")
     r.add_argument("agent_id")
     ss.add_parser("list")
@@ -144,6 +148,8 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--planner", choices=("scripted", "llm"), default="scripted")
     s.add_argument("--payments", choices=("fake", "real"), default="fake")
     s.add_argument("--wait", type=int, default=None, help="seconds to wait for the payment (fake: 30, real: 180)")
+    s.add_argument("--sign", action="store_true",
+                   help="the demo agent registers a public key and signs every request (ed25519)")
     return p
 
 
@@ -226,14 +232,26 @@ def _dispatch(args, settings: Settings) -> int:
 
     if cmd == "agent":
         ctx = build_context(settings, use_fake_payments=True)
+        if args.agent_cmd == "keygen":
+            private, public = generate_keypair()
+            print("Ed25519 keypair for an agent operator. The merchant only ever sees the public half.")
+            print(f"Private key (stays with the agent): {private}")
+            print(f"Public key (give to the merchant, `agent add --pubkey`): {public}")
+            return 0
         if args.agent_cmd == "add":
             caps = (_paise(args.per_txn, "--per-txn"), _paise(args.daily, "--daily"), _paise(args.total, "--total"))
             cats = [c.strip() for c in args.categories.split(",") if c.strip()]
-            agent, key = ctx.agents.register(args.name)
-            ctx.ledger.append("agent.registered", "merchant", {"agent_id": agent.id, "name": agent.name})
+            try:
+                agent, key = ctx.agents.register(args.name, public_key=args.pubkey)
+            except ValueError as exc:
+                raise ConfigError(f"--pubkey: {exc}")
+            ctx.ledger.append("agent.registered", "merchant",
+                              {"agent_id": agent.id, "name": agent.name, "signs_requests": agent.signs_requests})
             mandate = ctx.mandates.create(agent.id, caps[0], caps[1], caps[2], cats, ctx.clock() + args.days * 86400)
             ctx.ledger.append("mandate.created", "merchant", mandate.to_dict())
             print(f"Registered agent {agent.id} ({agent.name}).")
+            if agent.signs_requests:
+                print("This agent must sign every request (ed25519); a leaked API key alone is useless.")
             print(f"Mandate {mandate.id}: {rupees(caps[0])} per order, {rupees(caps[1])} per day, "
                   f"{rupees(caps[2])} total, categories {cats or 'any'}, until {_ts(mandate.expires_at)}.")
             print(f"API key (shown once, store it now): {key}")
@@ -252,7 +270,8 @@ def _dispatch(args, settings: Settings) -> int:
             caps = (f"{rupees(m.per_txn_cap_paise)} / order, {rupees(m.daily_cap_paise)} / day, "
                     f"{rupees(m.total_cap_paise)} total, {', '.join(m.categories) or 'any category'}") if m else "no active mandate"
             spent = ctx.mandates.spent(m.id, now)[0] if m else 0
-            print(f"{a.id}  {a.name:<16} {a.status:<8} {caps}; spent {rupees(spent)}")
+            auth = "signed" if a.signs_requests else "bearer"
+            print(f"{a.id}  {a.name:<16} {a.status:<8} {auth:<7} {caps}; spent {rupees(spent)}")
         return 0
 
     if cmd == "policy":
@@ -427,7 +446,8 @@ def _dispatch(args, settings: Settings) -> int:
             print("(catalog was empty; seeded the demo products)")
         wait = args.wait if args.wait is not None else (180 if args.payments == "real" else 30)
         sleep = (lambda s: None) if ctx.payments_mode == "fake" else time.sleep
-        run_demo(ctx, args.scenario, planner=args.planner, llm=llm, wait_s=wait, printer=print, sleep=sleep)
+        run_demo(ctx, args.scenario, planner=args.planner, llm=llm, wait_s=wait, printer=print, sleep=sleep,
+                 sign=args.sign)
         return 0
 
     raise ConfigError(f"unknown command {cmd}")
