@@ -277,7 +277,7 @@ def install_dashboard(app: FastAPI, ctx) -> None:
     def ledger_page(request: Request, replay_text: str | None = None, replay_ok: bool | None = None):
         events = ctx.ledger.events()
         return render(request, "ledger.html", events=events[-300:], total=len(events), verify=ctx.ledger.verify(),
-                      head=ctx.ledger.head(), replay_text=replay_text, replay_ok=replay_ok)
+                      head=ctx.ledger.head(), anchor=ctx.ledger.anchor(), replay_text=replay_text, replay_ok=replay_ok)
 
     @router.get("/ledger", response_class=HTMLResponse)
     def ledger_get(request: Request, _=Depends(require_merchant)):

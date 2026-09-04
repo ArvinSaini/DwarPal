@@ -155,3 +155,12 @@ def test_ledger_replay_button(app_client, world):
     app_client.post("/agent/v1/checkout_sessions", json={"items": SHOES}, headers={"Idempotency-Key": "k"})
     r = app_client.post("/dashboard/ledger/replay")
     assert r.status_code == 200 and "identical" in r.text
+
+
+def test_ledger_page_shows_the_anchor_to_keep(app_client, world):
+    login(app_client)
+    world.ledger.append("a", "x", {"n": 1})
+    r = app_client.get("/dashboard/ledger")
+    assert r.status_code == 200
+    assert f"{world.ledger.count()}:{world.ledger.head()}" in r.text  # the <seq>:<hash> anchor, copy-pasteable
+    assert "ledger verify --anchor" in r.text

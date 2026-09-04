@@ -13,7 +13,7 @@
 {% if replay_text is not none %}
 <div class="{{ 'flash' if replay_ok else 'error' }}"><strong>Replay:</strong> <pre style="margin:6px 0 0; white-space: pre-wrap">{{ replay_text }}</pre></div>
 {% endif %}
-<p class="muted">Head <span class="mono">{{ head }}</span>. Each event's hash covers the previous hash and the event body, so editing, inserting, deleting or reordering any past event breaks verification. Keep the head hash somewhere else to detect tail truncation.</p>
+<p class="muted">Anchor <span class="mono">{{ anchor }}</span> — copy it somewhere outside this database. Each event's hash covers the previous hash and the event body, so editing, inserting, deleting or reordering any past event breaks verification on its own; a cut or rewritten tail is caught by <code>python -m dwarpal ledger verify --anchor {{ anchor }}</code>. Every agent receives the same anchor in its session trail.</p>
 <section class="card">
   <h2>Events{% if total > events|length %} (last {{ events|length }} of {{ total }}){% endif %}</h2>
   <table>
