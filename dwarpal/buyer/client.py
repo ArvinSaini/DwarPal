@@ -1,9 +1,13 @@
 """HTTP client for the DwarPal agent API. Works against a live server or an in-process TestClient."""
 from __future__ import annotations
 
+import json as _json
+import time
 import uuid
 
 import httpx
+
+from dwarpal.signing import HEADER_NONCE, HEADER_SIGNATURE, HEADER_TIMESTAMP, sign
 
 
 class GateAPIError(Exception):
@@ -14,16 +18,29 @@ class GateAPIError(Exception):
 
 
 class GateClient:
-    def __init__(self, base_url: str, api_key: str, http=None, timeout_s: int = 30):
+    def __init__(self, base_url: str, api_key: str, http=None, timeout_s: int = 30,
+                 signing_key: str | None = None, clock=None):
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key
         self.http = http or httpx.Client(timeout=timeout_s)
+        self.signing_key = signing_key  # base64 Ed25519 private key; when set, every request is signed
+        self.clock = clock or (lambda: int(time.time()))
 
     def _request(self, method: str, path: str, json=None, headers: dict | None = None, params: dict | None = None):
         h = {"Authorization": f"Bearer {self.api_key}", "Accept": "application/json"}
         if headers:
             h.update(headers)
-        r = self.http.request(method, self.base_url + path, json=json, headers=h, params=params)
+        url = httpx.URL(self.base_url + path, params=params or None)
+        body = _json.dumps(json, separators=(",", ":")).encode("utf-8") if json is not None else b""
+        if self.signing_key:
+            # Sign the bytes that go on the wire: method, path plus query exactly as sent, sha256 of the body.
+            ts, nonce = self.clock(), uuid.uuid4().hex
+            target = url.raw_path.decode("ascii")
+            h.update({HEADER_TIMESTAMP: str(ts), HEADER_NONCE: nonce,
+                      HEADER_SIGNATURE: sign(self.signing_key, ts, nonce, method, target, body)})
+        if json is not None:
+            h["Content-Type"] = "application/json"
+        r = self.http.request(method, str(url), content=body if json is not None else None, headers=h)
         try:
             body = r.json()
         except ValueError:

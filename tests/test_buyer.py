@@ -199,3 +199,23 @@ def test_wait_polls_are_bounded_so_a_no_op_sleep_cannot_spin(gate, world):
     r = agent.run()
     assert r.outcome == "payment_pending"
     assert len(calls) == 10, f"expected 30s / 3s = 10 polls, got {len(calls)}"
+
+
+def test_client_signs_every_request_when_given_a_private_key(world):
+    from dwarpal.signing import generate_keypair
+    private, public = generate_keypair()
+    agent, key = world.agents.register("signer", public_key=public)
+    world.mandates.create(agent.id, 400000, 800000, 2000000, [], world.clock.now + 7 * 86400)
+    http = make_client(world)
+    http.headers.pop("Authorization")
+    unsigned = GateClient("", key, http=http)
+    with pytest.raises(GateAPIError) as ei:
+        unsigned.products()
+    assert ei.value.body["code"] == "signature_required"
+    gate = GateClient("", key, http=http, signing_key=private, clock=world.clock)
+    assert len(gate.products(q="bottle")) == 1  # query string signed correctly
+    s = gate.create(SHOES)
+    assert s["status"] == "ready_for_payment"
+    assert gate.complete(s["id"])["status"] == "payment_pending"
+    assert gate.get(s["id"])["status"] == "completed"  # fake payments pay by default
+    assert gate.trail(s["id"])["verify"]["ok"]
