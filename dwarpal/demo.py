@@ -7,6 +7,7 @@ from typing import Callable
 from dwarpal.buyer.agent import BuyerAgent, RunResult
 from dwarpal.buyer.client import GateClient
 from dwarpal.buyer.planner import Action, LLMPlanner, ScriptedPlanner
+from dwarpal.signing import generate_keypair
 from dwarpal.ledger import canonical
 from dwarpal.money import rupees
 from dwarpal.payments import FakePayments
@@ -114,11 +115,18 @@ def print_trail(ctx, session_id: str, printer: Callable[[str], None]) -> None:
 
 def run_demo(ctx, scenario: str, planner: str = "scripted", llm=None, wait_s: int = 0,
              printer: Callable[[str], None] = print, sleep: Callable[[float], None] = time.sleep,
-             poll_every_s: int = 3, max_steps: int = 12) -> RunResult:
+             poll_every_s: int = 3, max_steps: int = 12, sign: bool = False) -> RunResult:
     if scenario not in SCENARIOS:
         raise ValueError(f"unknown scenario {scenario!r}; choose one of {SCENARIOS}")
-    agent, key = ctx.agents.register(f"demo-{scenario}")
-    ctx.ledger.append("agent.registered", "merchant", {"agent_id": agent.id, "name": agent.name})
+    signing_key = None
+    if sign:  # the demo agent keeps its private key; the merchant only ever sees the public half
+        signing_key, public_key = generate_keypair()
+        agent, key = ctx.agents.register(f"demo-{scenario}", public_key=public_key)
+        ctx.ledger.append("agent.registered", "merchant",
+                          {"agent_id": agent.id, "name": agent.name, "signs_requests": True})
+    else:
+        agent, key = ctx.agents.register(f"demo-{scenario}")
+        ctx.ledger.append("agent.registered", "merchant", {"agent_id": agent.id, "name": agent.name})
     mandate = ctx.mandates.create(agent.id, expires_at=ctx.clock() + 7 * 86400, **MANDATE)
     ctx.ledger.append("mandate.created", "merchant", mandate.to_dict())
     if scenario == "payfail" and isinstance(ctx.payments, FakePayments):
@@ -133,7 +141,7 @@ def run_demo(ctx, scenario: str, planner: str = "scripted", llm=None, wait_s: in
             printer(f"(merchant policy: orders above {rupees(REVIEW_THRESHOLD_PAISE)} need a human review for this demo)")
     try:
         return _run_demo(ctx, scenario, agent, key, mandate, planner, llm, wait_s, printer, sleep, poll_every_s,
-                         max_steps)
+                         max_steps, signing_key)
     finally:
         if previous_policy is not None:
             ctx.policies.set(previous_policy)
@@ -142,7 +150,7 @@ def run_demo(ctx, scenario: str, planner: str = "scripted", llm=None, wait_s: in
 
 
 def _run_demo(ctx, scenario, agent, key, mandate, planner, llm, wait_s, printer, sleep, poll_every_s,
-              max_steps) -> RunResult:
+              max_steps, signing_key=None) -> RunResult:
     from fastapi.testclient import TestClient
 
     from dwarpal.api import create_app
@@ -151,10 +159,11 @@ def _run_demo(ctx, scenario, agent, key, mandate, planner, llm, wait_s, printer,
     printer(f"Intent:   {INTENTS[scenario]}")
     printer(f"Agent:    {agent.id} ({agent.name}), mandate {rupees(mandate.per_txn_cap_paise)} per order, "
             f"{rupees(mandate.daily_cap_paise)} per day, {rupees(mandate.total_cap_paise)} total")
-    printer(f"Payments: {ctx.payments_mode}; planner: {planner}")
+    printer(f"Payments: {ctx.payments_mode}; planner: {planner}; "
+            f"requests: {'signed (ed25519) on top of the bearer key' if signing_key else 'bearer key'}")
     printer("")
 
-    client = GateClient("", key, http=TestClient(create_app(ctx)))
+    client = GateClient("", key, http=TestClient(create_app(ctx)), signing_key=signing_key, clock=ctx.clock)
     if planner == "llm":
         if llm is None:
             raise ValueError("planner='llm' needs an LLM client")

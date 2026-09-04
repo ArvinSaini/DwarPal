@@ -65,3 +65,13 @@ def test_review_scenario_restores_the_policy_for_later_runs(world):
 def test_run_demo_rejects_unknown_scenario(world):
     with pytest.raises(ValueError):
         run_demo(make_ctx(world), "nope", printer=lambda s: None)
+
+
+def test_run_demo_with_signed_requests(world):
+    ctx = make_ctx(world)
+    out: list[str] = []
+    r = run_demo(ctx, "happy", planner="scripted", wait_s=30, printer=out.append,
+                 sleep=lambda s: world.clock.tick(s), sign=True)
+    assert r.outcome == "paid", "\n".join(out)
+    assert "ed25519" in "\n".join(out).lower()
+    assert world.agents.all()[-1].signs_requests is True  # the demo's own agent registered a public key
