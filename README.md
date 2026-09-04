@@ -12,12 +12,28 @@
 
 Razorpay AI Buildathon 2026 · Track 01: AI Growth & Agentic Commerce · Python · Razorpay test mode · zero-cost stack
 
+[Quickstart](#quickstart) · [How it fits together](#how-it-fits-together) · [What an agent sees](#what-an-agent-sees) ·
+[The gate](#the-gate) · [Sessions and failure recovery](#sessions-and-failure-recovery) · [Data model](#data-model) ·
+[Evaluation](#evaluation) · [Limitations](#honest-limitations)
+
 AI assistants are starting to shop on people's behalf. NPCI's Unified Agent Protocol, Razorpay's agentic-payments
 pilots and the OpenAI/Stripe Agentic Commerce Protocol all point the same way: merchants will be asked to sell to
 machines. Dwarpal is the merchant-side gateway that lets them do it without losing control: an agent-readable
 catalog, an ACP-shaped checkout API, a deterministic policy gate with a human review queue, per-agent spend mandates
 with reserve/commit/release accounting, Razorpay Payment Links with one gated retry, gated refunds, a hash-chained
 audit ledger that can be replayed, and a bounded cross-sell that grows the basket.
+
+## How it fits together
+
+![Dwarpal system context. The buyer agent and the merchant sit outside a dashed trust boundary. Inside it, the agent
+API and the merchant console both feed one session state machine, which is the only code path that creates a Payment
+Link; under it sit the pure gate, the mandate accounting, the append-only ledger and the Razorpay adapter, then the
+catalog stores and the two model-facing components, all over one SQLite file. Razorpay and the LLM provider are
+outside on the right.](docs/img/01-system-context.svg)
+
+One process, one SQLite file, one place where money moves. Blue is deterministic code, amber is where the model
+proposes and something else disposes, and `razorpay_client.py` is the only module that holds a Razorpay key. The
+five diagrams in this README are generated, not drawn: `python scripts/make_diagrams.py`.
 
 ## The bar, and where it lives
 
@@ -75,6 +91,12 @@ GET  /agent/v1/checkout_sessions/{id}/trail       the session's ledger events + 
 POST /webhooks/razorpay                           optional; polling covers everything it does
 ```
 
+![Sequence diagram of one checkout. The buyer agent reads the feed, creates a session, the API asks the pure gate
+in preview mode and writes session.created and gate.decision to the ledger, returns ready_for_payment with offers;
+on complete the gate runs authoritatively, the mandate reserves the total, the adapter creates one Razorpay Payment
+Link, a human pays it, polling sees the capture, the reservation commits and the ledger records
+session.completed.](docs/img/02-checkout-sequence.svg)
+
 Auth is `Authorization: Bearer agk_...` (issued per agent by the merchant). `Idempotency-Key` is required on
 create and complete. Errors are `{type, code, message, param?}`; a policy denial carries `rule_id`; an order
 waiting for the merchant answers `requires_review`.
@@ -101,6 +123,14 @@ suite runs offline and the demo works without a paid key. One seed product carri
 
 `evaluate(GateInput) -> Decision`: fifteen ordered rules, first failure decides, every rule recorded. Verdicts are
 ALLOW, DENY, or REVIEW (a human decides).
+
+![The gate. A GateInput of agent, mandate, merchant policy, catalog snapshot, cart, reserved plus committed spend,
+clock, session status and mode runs through fifteen rules in a fixed order, G00 to G14 plus the G99 guard, grouped by
+where each one comes from; the outcomes are ALLOW (reserve, then one Payment Link), DENY (the first failing rule, its
+id and its reason) and REVIEW (a human decides). Refunds run the same way through RF00 to
+RF04.](docs/img/03-gate.svg)
+
+The same rules as text, with what each one refuses:
 
 | Rule | Checks |
 |---|---|
@@ -131,6 +161,13 @@ the gate with no model: block rate 100%, false-positive rate 0%, 14 distinct rul
 
 `not_ready_for_payment | requires_review → ready_for_payment → payment_pending → completed | canceled`
 
+![Session state machine. Create runs the gate: ALLOW goes to ready_for_payment, DENY to not_ready_for_payment with
+the rule id, REVIEW to requires_review until the merchant decides. Complete reserves and issues a link, moving to
+payment_pending; a capture commits and completes; a first failed attempt loops back through a retry-mode gate with a
+fresh link; a second failure or a cancel releases the reservation and cancels the session; a completed session can
+still be refunded. Twelve numbered transitions are listed under the
+diagram.](docs/img/04-session-states.svg)
+
 - **create / update** run the gate in preview mode. A denial keeps the session open with `messages[]` so the agent can fix the cart. A REVIEW parks it in `requires_review` until the merchant approves or declines in the dashboard.
 - **complete** re-runs the gate authoritatively, reserves the amount on the mandate, creates the Payment Link.
 - **capture** commits the reservation. **Failed first attempt** (or an expired link) re-runs the gate in retry mode, cancels the old link and issues a fresh one; a second failure abandons and releases. A provider error at complete releases and returns 502 so the agent can try again.
@@ -138,6 +175,17 @@ the gate with no model: block rate 100%, false-positive rate 0%, 14 distinct rul
 - **refund** (merchant, dashboard or CLI) passes RF00 to RF04, calls Razorpay, records `refund.created`, and returns budget against the mandate's total cap.
 
 Full tables in `docs/architecture.md`; every threat and its control in `docs/threat-model.md`.
+
+## Data model
+
+![Domain model. Agent issues mandates; a Mandate holds reservations; a Session opens one reservation and records the
+gate's Decision, which is made of Checks; payments and refunds hang off the session; every decision and every money
+action is appended to the hash-chained Event log. Money is an integer number of paise
+everywhere.](docs/img/05-domain-model.svg)
+
+Every box is a SQLite table except `Decision` and `Check`, which are the pure values the gate returns and the ledger
+records. That is what makes `ledger replay` possible: each `gate.decision` event carries the exact input the gate
+consumed, so the decision can be re-run years later and compared.
 
 ## Demo scenarios
 
@@ -254,9 +302,11 @@ Makefile             make test / eval / demos / reports / serve
 .github/             CI (tests, eval, batch invariants, every scenario), issue and PR templates
 docs/                test results, architecture, threat model, decisions, protocol mapping,
                      demo script, form answers, gate eval, metrics reports, design spec and plan
+docs/img/            the five README diagrams (SVG, generated)
 scripts/smoke_razorpay.py   one-time real test-mode check
 scripts/make_evaluation.py  regenerates Evaluation.md from live runs
 scripts/make_test_report.py regenerates docs/test-results.md from a pytest run
+scripts/make_diagrams.py    regenerates docs/img/*.svg
 ```
 
 MIT licensed.

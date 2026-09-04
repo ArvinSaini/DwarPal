@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 866" width="1000" height="866" role="img" aria-label="Checkout — one session, end to end">
+<rect width="1000" height="866" rx="10" fill="#fbfaf7" stroke="#e0dbd0"/>
+<text x="24.0" y="36.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="19" fill="#1b1f24" text-anchor="start" font-weight="600">Checkout — one session, end to end</text>
+<text x="24.0" y="57.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="12" fill="#5f6b7a" text-anchor="start" font-weight="normal">Solid arrows are calls, dashed arrows are replies. Nothing reaches Razorpay until the gate has said ALLOW and the mandate has reserved the money.</text>
+<rect x="707.1759999999999" y="22" width="12" height="12" rx="3" fill="#e8f1f8" stroke="#2b5f8e" stroke-width="1.2"/>
+<text x="725.2" y="32.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.8" fill="#5f6b7a" text-anchor="start" font-weight="normal">dwarpal</text>
+<rect x="787.2439999999999" y="22" width="12" height="12" rx="3" fill="#efeafb" stroke="#6244a8" stroke-width="1.2"/>
+<text x="805.2" y="32.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.8" fill="#5f6b7a" text-anchor="start" font-weight="normal">audit trail</text>
+<rect x="890.2079999999999" y="22" width="12" height="12" rx="3" fill="#f0f0ee" stroke="#6b7280" stroke-width="1.2"/>
+<text x="908.2" y="32.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.8" fill="#5f6b7a" text-anchor="start" font-weight="normal">external</text>
+<path d="M 88.6 118 L 88.6 832" stroke="#c3c9d1" stroke-width="1.2" stroke-dasharray="4 5"/>
+<rect x="24.57142857142857" y="74" width="128" height="44" rx="9" fill="#f0f0ee" stroke="#6b7280" stroke-width="1.4"/>
+<text x="33.6" y="93.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="12" fill="#1b1f24" text-anchor="start" font-weight="600">Buyer agent</text>
+<text x="33.6" y="108.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="9.8" fill="#5f6b7a" text-anchor="start" font-weight="normal">the demo LLM shopper</text>
+<path d="M 225.7 118 L 225.7 832" stroke="#c3c9d1" stroke-width="1.2" stroke-dasharray="4 5"/>
+<rect x="161.71428571428572" y="74" width="128" height="44" rx="9" fill="#e8f1f8" stroke="#2b5f8e" stroke-width="1.4"/>
+<text x="170.7" y="93.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="12" fill="#1b1f24" text-anchor="start" font-weight="600">Dwarpal API</text>
+<text x="170.7" y="108.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="9.8" fill="#5f6b7a" text-anchor="start" font-weight="normal">api.py + sessions.py</text>
+<path d="M 362.9 118 L 362.9 832" stroke="#c3c9d1" stroke-width="1.2" stroke-dasharray="4 5"/>
+<rect x="298.85714285714283" y="74" width="128" height="44" rx="9" fill="#e8f1f8" stroke="#2b5f8e" stroke-width="1.4"/>
+<text x="307.9" y="93.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="12" fill="#1b1f24" text-anchor="start" font-weight="600">Gate</text>
+<text x="307.9" y="108.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="9.8" fill="#5f6b7a" text-anchor="start" font-weight="normal">gate.py — pure</text>
+<path d="M 500.0 118 L 500.0 832" stroke="#c3c9d1" stroke-width="1.2" stroke-dasharray="4 5"/>
+<rect x="436.0" y="74" width="128" height="44" rx="9" fill="#e8f1f8" stroke="#2b5f8e" stroke-width="1.4"/>
+<text x="445.0" y="93.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="12" fill="#1b1f24" text-anchor="start" font-weight="600">Mandates</text>
+<text x="445.0" y="108.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="9.8" fill="#5f6b7a" text-anchor="start" font-weight="normal">mandates.py</text>
+<path d="M 637.1 118 L 637.1 832" stroke="#c3c9d1" stroke-width="1.2" stroke-dasharray="4 5"/>
+<rect x="573.1428571428571" y="74" width="128" height="44" rx="9" fill="#e8f1f8" stroke="#2b5f8e" stroke-width="1.4"/>
+<text x="582.1" y="93.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="12" fill="#1b1f24" text-anchor="start" font-weight="600">Payments</text>
+<text x="582.1" y="108.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="9.8" fill="#5f6b7a" text-anchor="start" font-weight="normal">razorpay_client.py</text>
+<path d="M 774.3 118 L 774.3 832" stroke="#c3c9d1" stroke-width="1.2" stroke-dasharray="4 5"/>
+<rect x="710.2857142857142" y="74" width="128" height="44" rx="9" fill="#f0f0ee" stroke="#6b7280" stroke-width="1.4"/>
+<text x="719.3" y="93.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="12" fill="#1b1f24" text-anchor="start" font-weight="600">Razorpay</text>
+<text x="719.3" y="108.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="9.8" fill="#5f6b7a" text-anchor="start" font-weight="normal">test mode</text>
+<path d="M 911.4 118 L 911.4 832" stroke="#c3c9d1" stroke-width="1.2" stroke-dasharray="4 5"/>
+<rect x="847.4285714285714" y="74" width="128" height="44" rx="9" fill="#efeafb" stroke="#6244a8" stroke-width="1.4"/>
+<text x="856.4" y="93.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="12" fill="#1b1f24" text-anchor="start" font-weight="600">Ledger</text>
+<text x="856.4" y="108.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="9.8" fill="#5f6b7a" text-anchor="start" font-weight="normal">ledger.py</text>
+<path d="M 91.6 144.0 L 222.7 144.0" fill="none" stroke="#3d4a58" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 222.7 144.0 L 216.8 146.7 L 216.8 141.3 Z" fill="#3d4a58"/>
+<rect x="91.5" y="128" width="131.3" height="14" fill="#fbfaf7"/>
+<text x="157.1" y="138.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.4" fill="#39434f" text-anchor="middle" font-weight="normal">GET /agent/v1/products</text>
+<path d="M 222.7 174.0 L 91.6 174.0" fill="none" stroke="#8d97a3" stroke-width="1.3" stroke-dasharray="5 4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 91.6 174.0 L 97.5 171.3 L 97.5 176.7 Z" fill="#8d97a3"/>
+<rect x="41.9" y="158" width="230.5" height="14" fill="#fbfaf7"/>
+<text x="157.1" y="168.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.4" fill="#5f6b7a" text-anchor="middle" font-weight="normal">merchant-approved fields, our own prices</text>
+<path d="M 91.6 204.0 L 222.7 204.0" fill="none" stroke="#3d4a58" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 222.7 204.0 L 216.8 206.7 L 216.8 201.3 Z" fill="#3d4a58"/>
+<rect x="36.4" y="188" width="241.5" height="14" fill="#fbfaf7"/>
+<text x="157.1" y="198.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.4" fill="#39434f" text-anchor="middle" font-weight="normal">POST /agent/v1/checkout_sessions   {items}</text>
+<path d="M 228.7 234.0 L 359.9 234.0" fill="none" stroke="#3d4a58" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 359.9 234.0 L 353.9 236.7 L 353.9 231.3 Z" fill="#3d4a58"/>
+<rect x="198.3" y="218" width="191.9" height="14" fill="#fbfaf7"/>
+<text x="294.3" y="228.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.4" fill="#39434f" text-anchor="middle" font-weight="normal">evaluate(GateInput, mode=preview)</text>
+<path d="M 359.9 264.0 L 228.7 264.0" fill="none" stroke="#8d97a3" stroke-width="1.3" stroke-dasharray="5 4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 228.7 264.0 L 234.6 261.3 L 234.6 266.7 Z" fill="#8d97a3"/>
+<rect x="134.9" y="248" width="318.7" height="14" fill="#fbfaf7"/>
+<text x="294.3" y="258.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.4" fill="#5f6b7a" text-anchor="middle" font-weight="normal">ALLOW · every rule that ran, with a plain-English reason</text>
+<path d="M 228.7 294.0 L 908.4 294.0" fill="none" stroke="#3d4a58" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 908.4 294.0 L 902.5 296.7 L 902.5 291.3 Z" fill="#3d4a58"/>
+<rect x="434.0" y="278" width="269.1" height="14" fill="#fbfaf7"/>
+<text x="568.6" y="288.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.4" fill="#39434f" text-anchor="middle" font-weight="normal">session.created · gate.decision  (hash-chained)</text>
+<path d="M 222.7 324.0 L 91.6 324.0" fill="none" stroke="#8d97a3" stroke-width="1.3" stroke-dasharray="5 4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 91.6 324.0 L 97.5 321.3 L 97.5 326.7 Z" fill="#8d97a3"/>
+<rect x="17.1" y="308" width="280.1" height="14" fill="#fbfaf7"/>
+<text x="157.1" y="318.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.4" fill="#5f6b7a" text-anchor="middle" font-weight="normal">ready_for_payment + at most two cross-sell offers</text>
+<path d="M 91.6 354.0 L 222.7 354.0" fill="none" stroke="#3d4a58" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 222.7 354.0 L 216.8 356.7 L 216.8 351.3 Z" fill="#3d4a58"/>
+<rect x="25.4" y="338" width="263.6" height="14" fill="#fbfaf7"/>
+<text x="157.1" y="348.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.4" fill="#39434f" text-anchor="middle" font-weight="normal">POST /agent/v1/checkout_sessions/{id}/complete</text>
+<path d="M 228.7 384.0 L 359.9 384.0" fill="none" stroke="#3d4a58" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 359.9 384.0 L 353.9 386.7 L 353.9 381.3 Z" fill="#3d4a58"/>
+<rect x="181.8" y="368" width="225.0" height="14" fill="#fbfaf7"/>
+<text x="294.3" y="378.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.4" fill="#39434f" text-anchor="middle" font-weight="normal">evaluate(GateInput, mode=authoritative)</text>
+<path d="M 359.9 414.0 L 228.7 414.0" fill="none" stroke="#8d97a3" stroke-width="1.3" stroke-dasharray="5 4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 228.7 414.0 L 234.6 411.3 L 234.6 416.7 Z" fill="#8d97a3"/>
+<rect x="129.4" y="398" width="329.7" height="14" fill="#fbfaf7"/>
+<text x="294.3" y="408.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.4" fill="#5f6b7a" text-anchor="middle" font-weight="normal">ALLOW  — a DENY here is 409 policy_denied with the rule_id</text>
+<path d="M 228.7 444.0 L 497.0 444.0" fill="none" stroke="#3d4a58" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 497.0 444.0 L 491.1 446.7 L 491.1 441.3 Z" fill="#3d4a58"/>
+<rect x="269.7" y="428" width="186.4" height="14" fill="#fbfaf7"/>
+<text x="362.9" y="438.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.4" fill="#39434f" text-anchor="middle" font-weight="normal">reserve(session, mandate, total)</text>
+<path d="M 228.7 474.0 L 634.1 474.0" fill="none" stroke="#3d4a58" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 634.1 474.0 L 628.2 476.7 L 628.2 471.3 Z" fill="#3d4a58"/>
+<rect x="352.0" y="458" width="158.8" height="14" fill="#fbfaf7"/>
+<text x="431.4" y="468.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.4" fill="#39434f" text-anchor="middle" font-weight="normal">create_link(PaymentRequest)</text>
+<path d="M 640.1 504.0 L 771.3 504.0" fill="none" stroke="#3d4a58" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 771.3 504.0 L 765.4 506.7 L 765.4 501.3 Z" fill="#3d4a58"/>
+<rect x="640.1" y="488" width="131.3" height="14" fill="#fbfaf7"/>
+<text x="705.7" y="498.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.4" fill="#39434f" text-anchor="middle" font-weight="normal">POST /v1/payment_links</text>
+<path d="M 771.3 534.0 L 640.1 534.0" fill="none" stroke="#8d97a3" stroke-width="1.3" stroke-dasharray="5 4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 640.1 534.0 L 646.1 531.3 L 646.1 536.7 Z" fill="#8d97a3"/>
+<rect x="648.4" y="518" width="114.7" height="14" fill="#fbfaf7"/>
+<text x="705.7" y="528.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.4" fill="#5f6b7a" text-anchor="middle" font-weight="normal">link id + short url</text>
+<path d="M 228.7 564.0 L 908.4 564.0" fill="none" stroke="#3d4a58" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 908.4 564.0 L 902.5 566.7 L 902.5 561.3 Z" fill="#3d4a58"/>
+<rect x="456.1" y="548" width="225.0" height="14" fill="#fbfaf7"/>
+<text x="568.6" y="558.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.4" fill="#39434f" text-anchor="middle" font-weight="normal">mandate.reserved · payment.link.created</text>
+<path d="M 222.7 594.0 L 91.6 594.0" fill="none" stroke="#8d97a3" stroke-width="1.3" stroke-dasharray="5 4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 91.6 594.0 L 97.5 591.3 L 97.5 596.7 Z" fill="#8d97a3"/>
+<rect x="25.4" y="578" width="263.6" height="14" fill="#fbfaf7"/>
+<text x="157.1" y="588.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.4" fill="#5f6b7a" text-anchor="middle" font-weight="normal">payment_pending + the link the buyer must open</text>
+<path d="M 541.1428571428571 630 h 308 l 12 12 v 26 h -320 v -38 Z" fill="#fff8e6" stroke="#c9a227" stroke-width="1.2"/>
+<text x="553.1" y="654.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.8" fill="#7a5c00" text-anchor="start" font-weight="normal">a human pays the link on the Razorpay test checkout</text>
+<path d="M 228.7 690.0 L 634.1 690.0" fill="none" stroke="#3d4a58" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 634.1 690.0 L 628.2 692.7 L 628.2 687.3 Z" fill="#3d4a58"/>
+<rect x="280.4" y="674" width="302.1" height="14" fill="#fbfaf7"/>
+<text x="431.4" y="684.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.4" fill="#39434f" text-anchor="middle" font-weight="normal">poll(link) — reconciler every 3 s, on GET, or webhook</text>
+<path d="M 640.1 720.0 L 771.3 720.0" fill="none" stroke="#3d4a58" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 771.3 720.0 L 765.4 722.7 L 765.4 717.3 Z" fill="#3d4a58"/>
+<rect x="587.7" y="704" width="236.0" height="14" fill="#fbfaf7"/>
+<text x="705.7" y="714.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.4" fill="#39434f" text-anchor="middle" font-weight="normal">fetch the link, then the order's payments</text>
+<path d="M 771.3 750.0 L 640.1 750.0" fill="none" stroke="#8d97a3" stroke-width="1.3" stroke-dasharray="5 4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 640.1 750.0 L 646.1 747.3 L 646.1 752.7 Z" fill="#8d97a3"/>
+<rect x="565.7" y="734" width="280.1" height="14" fill="#fbfaf7"/>
+<text x="705.7" y="744.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.4" fill="#5f6b7a" text-anchor="middle" font-weight="normal">captured (or failed → gate re-runs in retry mode)</text>
+<path d="M 228.7 780.0 L 497.0 780.0" fill="none" stroke="#3d4a58" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 497.0 780.0 L 491.1 782.7 L 491.1 777.3 Z" fill="#3d4a58"/>
+<rect x="231.1" y="764" width="263.6" height="14" fill="#fbfaf7"/>
+<text x="362.9" y="774.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.4" fill="#39434f" text-anchor="middle" font-weight="normal">commit(session) — reserved money becomes spent</text>
+<path d="M 228.7 810.0 L 908.4 810.0" fill="none" stroke="#3d4a58" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 908.4 810.0 L 902.5 812.7 L 902.5 807.3 Z" fill="#3d4a58"/>
+<rect x="409.2" y="794" width="318.7" height="14" fill="#fbfaf7"/>
+<text x="568.6" y="804.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.4" fill="#39434f" text-anchor="middle" font-weight="normal">payment.captured · mandate.committed · session.completed</text>
+</svg>

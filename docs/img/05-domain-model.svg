@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1044 660" width="1044" height="660" role="img" aria-label="Domain model — what the ledger can prove">
+<rect width="1044" height="660" rx="10" fill="#fbfaf7" stroke="#e0dbd0"/>
+<text x="24.0" y="36.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="19" fill="#1b1f24" text-anchor="start" font-weight="600">Domain model — what the ledger can prove</text>
+<text x="24.0" y="57.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="12" fill="#5f6b7a" text-anchor="start" font-weight="normal">Money is an integer number of paise everywhere. Every box below is a SQLite table or the pure value the gate returns.</text>
+<rect x="659.592" y="22" width="12" height="12" rx="3" fill="#e4f3f2" stroke="#177b7b" stroke-width="1.2"/>
+<text x="677.6" y="32.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.8" fill="#5f6b7a" text-anchor="start" font-weight="normal">state we store</text>
+<rect x="779.728" y="22" width="12" height="12" rx="3" fill="#e8f1f8" stroke="#2b5f8e" stroke-width="1.2"/>
+<text x="797.7" y="32.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.8" fill="#5f6b7a" text-anchor="start" font-weight="normal">the gate's answer</text>
+<rect x="917.036" y="22" width="12" height="12" rx="3" fill="#efeafb" stroke="#6244a8" stroke-width="1.2"/>
+<text x="935.0" y="32.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.8" fill="#5f6b7a" text-anchor="start" font-weight="normal">audit trail</text>
+<rect x="24" y="90" width="280" height="106.0" rx="8" fill="#e4f3f2" stroke="#177b7b" stroke-width="1.4"/>
+<path d="M 24 120 H 304" stroke="#177b7b" stroke-width="1.1"/>
+<text x="36.0" y="110.0" font-family="Cascadia Mono, Consolas, DejaVu Sans Mono, monospace" font-size="12.5" fill="#1b1f24" text-anchor="start" font-weight="700">Agent</text>
+<text x="292.0" y="110.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10" fill="#177b7b" text-anchor="end" font-weight="normal">merchant issues the key</text>
+<text x="36.0" y="140.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">id · name</text>
+<text x="36.0" y="155.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">api_key_hash: sha256, shown once</text>
+<text x="36.0" y="171.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">status: active | revoked</text>
+<text x="36.0" y="186.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">revoking one stops G01 dead</text>
+<rect x="24" y="246" width="280" height="137.0" rx="8" fill="#e4f3f2" stroke="#177b7b" stroke-width="1.4"/>
+<path d="M 24 276 H 304" stroke="#177b7b" stroke-width="1.1"/>
+<text x="36.0" y="266.0" font-family="Cascadia Mono, Consolas, DejaVu Sans Mono, monospace" font-size="12.5" fill="#1b1f24" text-anchor="start" font-weight="700">Product</text>
+<text x="292.0" y="266.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10" fill="#177b7b" text-anchor="end" font-weight="normal">the catalog</text>
+<text x="36.0" y="296.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">id · title · description</text>
+<text x="36.0" y="311.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">price_paise: int — always paise</text>
+<text x="36.0" y="327.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">availability: in_stock | out_of_stock</text>
+<text x="36.0" y="342.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">category: the merchant approved it</text>
+<text x="36.0" y="358.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">attributes · tags · recommend_when</text>
+<text x="36.0" y="373.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">snapshot(): what the gate may see</text>
+<path d="M 24 404 h 264 l 16 16 v 40 h -280 Z" fill="#fffdf5" stroke="#c9a227" stroke-width="1.2"/>
+<text x="38.0" y="424.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#7a5c00" text-anchor="start" font-weight="normal">The gate is priced from our own snapshot,</text>
+<text x="38.0" y="440.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#7a5c00" text-anchor="start" font-weight="normal">never from anything the agent or model sent.</text>
+<rect x="24" y="486" width="280" height="106.0" rx="8" fill="#efeafb" stroke="#6244a8" stroke-width="1.4"/>
+<path d="M 24 516 H 304" stroke="#6244a8" stroke-width="1.1"/>
+<text x="36.0" y="506.0" font-family="Cascadia Mono, Consolas, DejaVu Sans Mono, monospace" font-size="12.5" fill="#1b1f24" text-anchor="start" font-weight="700">Event</text>
+<text x="292.0" y="506.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10" fill="#6244a8" text-anchor="end" font-weight="normal">append-only</text>
+<text x="36.0" y="536.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">seq: int · ts · type · actor</text>
+<text x="36.0" y="551.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">session_id · payload</text>
+<text x="36.0" y="567.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">payload holds the gate's exact input</text>
+<text x="36.0" y="582.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">hash = sha256(prev_hash + body)</text>
+<rect x="382" y="90" width="280" height="137.0" rx="8" fill="#e4f3f2" stroke="#177b7b" stroke-width="1.4"/>
+<path d="M 382 120 H 662" stroke="#177b7b" stroke-width="1.1"/>
+<text x="394.0" y="110.0" font-family="Cascadia Mono, Consolas, DejaVu Sans Mono, monospace" font-size="12.5" fill="#1b1f24" text-anchor="start" font-weight="700">Mandate</text>
+<text x="650.0" y="110.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10" fill="#177b7b" text-anchor="end" font-weight="normal">per agent</text>
+<text x="394.0" y="140.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">id · agent_id · currency = INR</text>
+<text x="394.0" y="155.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">per_txn_cap_paise: int</text>
+<text x="394.0" y="171.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">daily_cap_paise: int</text>
+<text x="394.0" y="186.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">total_cap_paise: int</text>
+<text x="394.0" y="202.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">categories: list[str] — empty = any</text>
+<text x="394.0" y="217.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">starts_at · expires_at · status</text>
+<rect x="382" y="296" width="280" height="137.0" rx="8" fill="#e4f3f2" stroke="#177b7b" stroke-width="1.4"/>
+<path d="M 382 326 H 662" stroke="#177b7b" stroke-width="1.1"/>
+<text x="394.0" y="316.0" font-family="Cascadia Mono, Consolas, DejaVu Sans Mono, monospace" font-size="12.5" fill="#1b1f24" text-anchor="start" font-weight="700">Session</text>
+<text x="650.0" y="316.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10" fill="#177b7b" text-anchor="end" font-weight="normal">the state machine</text>
+<text x="394.0" y="346.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">id · agent_id · mandate_id</text>
+<text x="394.0" y="361.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">status: one of the six states</text>
+<text x="394.0" y="377.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">line_items · totals · messages · offers</text>
+<text x="394.0" y="392.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">last_decision: the gate's verdict</text>
+<text x="394.0" y="408.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">link_id · link_url · order_id · attempt</text>
+<text x="394.0" y="423.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">idempotency_key · create_body_hash</text>
+<rect x="740" y="90" width="280" height="106.0" rx="8" fill="#e4f3f2" stroke="#177b7b" stroke-width="1.4"/>
+<path d="M 740 120 H 1020" stroke="#177b7b" stroke-width="1.1"/>
+<text x="752.0" y="110.0" font-family="Cascadia Mono, Consolas, DejaVu Sans Mono, monospace" font-size="12.5" fill="#1b1f24" text-anchor="start" font-weight="700">Reservation</text>
+<text x="1008.0" y="110.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10" fill="#177b7b" text-anchor="end" font-weight="normal">the accounting</text>
+<text x="752.0" y="140.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">id · session_id · mandate_id</text>
+<text x="752.0" y="155.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">amount_paise: int</text>
+<text x="752.0" y="171.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">state: reserved | committed | released</text>
+<text x="752.0" y="186.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">spend = reserved + committed</text>
+<rect x="740" y="246" width="280" height="121.5" rx="8" fill="#e8f1f8" stroke="#2b5f8e" stroke-width="1.4"/>
+<path d="M 740 276 H 1020" stroke="#2b5f8e" stroke-width="1.1"/>
+<text x="752.0" y="266.0" font-family="Cascadia Mono, Consolas, DejaVu Sans Mono, monospace" font-size="12.5" fill="#1b1f24" text-anchor="start" font-weight="700">Decision</text>
+<text x="1008.0" y="266.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10" fill="#2b5f8e" text-anchor="end" font-weight="normal">what the gate returns</text>
+<text x="752.0" y="296.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">verdict: ALLOW | DENY | REVIEW</text>
+<text x="752.0" y="311.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">rule_id · reason</text>
+<text x="752.0" y="327.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">checks: list[Check]</text>
+<text x="752.0" y="342.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">lines: list[Line] — priced by us</text>
+<text x="752.0" y="358.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">total_paise: int</text>
+<rect x="740" y="398" width="280" height="90.5" rx="8" fill="#e8f1f8" stroke="#2b5f8e" stroke-width="1.4"/>
+<path d="M 740 428 H 1020" stroke="#2b5f8e" stroke-width="1.1"/>
+<text x="752.0" y="418.0" font-family="Cascadia Mono, Consolas, DejaVu Sans Mono, monospace" font-size="12.5" fill="#1b1f24" text-anchor="start" font-weight="700">Check</text>
+<text x="1008.0" y="418.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10" fill="#2b5f8e" text-anchor="end" font-weight="normal">one rule, one answer</text>
+<text x="752.0" y="448.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">rule: the rule id</text>
+<text x="752.0" y="463.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">ok: bool</text>
+<text x="752.0" y="479.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">detail: plain English, for a human</text>
+<rect x="740" y="520" width="280" height="106.0" rx="8" fill="#e4f3f2" stroke="#177b7b" stroke-width="1.4"/>
+<path d="M 740 550 H 1020" stroke="#177b7b" stroke-width="1.1"/>
+<text x="752.0" y="540.0" font-family="Cascadia Mono, Consolas, DejaVu Sans Mono, monospace" font-size="12.5" fill="#1b1f24" text-anchor="start" font-weight="700">Payment · Refund</text>
+<text x="1008.0" y="540.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10" fill="#177b7b" text-anchor="end" font-weight="normal">what really happened</text>
+<text x="752.0" y="570.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">razorpay_payment_id · attempt: int</text>
+<text x="752.0" y="585.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">status: captured | failed</text>
+<text x="752.0" y="601.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">refund: amount · reason · reference</text>
+<text x="752.0" y="616.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.5" fill="#39434f" text-anchor="start" font-weight="normal">a refund gives total-cap budget back</text>
+<path d="M 304.0 143.0 L 382.0 143.0" fill="none" stroke="#7d8894" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="323.1" y="130" width="39.8" height="13" fill="#fbfaf7"/>
+<text x="343.0" y="139.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10" fill="#5f6b7a" text-anchor="middle" font-weight="normal">issues</text>
+<text x="310.0" y="137.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10" fill="#5f6b7a" text-anchor="start" font-weight="600">1</text>
+<text x="376.0" y="137.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10" fill="#5f6b7a" text-anchor="start" font-weight="600">*</text>
+<path d="M 662.0 143.0 L 740.0 143.0" fill="none" stroke="#7d8894" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="683.8" y="130" width="34.5" height="13" fill="#fbfaf7"/>
+<text x="701.0" y="139.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10" fill="#5f6b7a" text-anchor="middle" font-weight="normal">holds</text>
+<text x="668.0" y="137.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10" fill="#5f6b7a" text-anchor="start" font-weight="600">1</text>
+<text x="734.0" y="137.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10" fill="#5f6b7a" text-anchor="start" font-weight="600">*</text>
+<path d="M 304.0 175.0 L 343.0 175.0 L 343.0 350.0 L 382.0 350.0" fill="none" stroke="#7d8894" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="325.8" y="253" width="34.5" height="13" fill="#fbfaf7"/>
+<text x="343.0" y="262.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10" fill="#5f6b7a" text-anchor="middle" font-weight="normal">opens</text>
+<text x="310.0" y="169.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10" fill="#5f6b7a" text-anchor="start" font-weight="600">1</text>
+<text x="376.0" y="344.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10" fill="#5f6b7a" text-anchor="start" font-weight="600">*</text>
+<path d="M 662.0 330.0 L 701.0 330.0 L 701.0 196.0" fill="none" stroke="#7d8894" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="673.1" y="255" width="55.7" height="13" fill="#fbfaf7"/>
+<text x="701.0" y="264.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10" fill="#5f6b7a" text-anchor="middle" font-weight="normal">0..1 open</text>
+<path d="M 662.0 300.0 L 740.0 300.0" fill="none" stroke="#7d8894" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="678.5" y="287" width="45.1" height="13" fill="#fbfaf7"/>
+<text x="701.0" y="296.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10" fill="#5f6b7a" text-anchor="middle" font-weight="normal">records</text>
+<path d="M 880.0 367.0 L 880.0 398.0" fill="none" stroke="#7d8894" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="892.1" y="377" width="39.8" height="13" fill="#fbfaf7"/>
+<text x="912.0" y="386.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10" fill="#5f6b7a" text-anchor="middle" font-weight="normal">1 .. *</text>
+<path d="M 522.0 433.0 L 522.0 470.0 L 164.0 470.0 L 164.0 486.0" fill="none" stroke="#7d8894" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="315.9" y="457" width="188.2" height="13" fill="#fbfaf7"/>
+<text x="410.0" y="466.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10" fill="#5f6b7a" text-anchor="middle" font-weight="normal">every decision, every money action</text>
+<path d="M 740.0 560.0 L 690.0 560.0 L 690.0 450.0 L 620.0 450.0 L 620.0 433.0" fill="none" stroke="#7d8894" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="664.8" y="491" width="50.4" height="13" fill="#fbfaf7"/>
+<text x="690.0" y="500.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10" fill="#5f6b7a" text-anchor="middle" font-weight="normal">attempts</text>
+<path d="M 880 367 l 7 10 l -7 10 l -7 -10 Z" fill="#2b5f8e" stroke="#2b5f8e"/>
+</svg>
