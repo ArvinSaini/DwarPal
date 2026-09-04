@@ -135,6 +135,8 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--reason", required=True)
     s.add_argument("--reference", default=None, help="idempotent reference (default: a timestamp)")
 
+    s = sub.add_parser("export", help="write the discovery document, the agent feed and the policy as JSON files")
+    s.add_argument("--out", default="data", help="directory to write into (default data)")
     s = sub.add_parser("eval", help="run the adversarial gate eval (offline, no model) and print the table")
     s.add_argument("--out", help="also write the Markdown table to this file")
 
@@ -416,6 +418,16 @@ def _dispatch(args, settings: Settings) -> int:
         if mismatches:
             print(f"{len(mismatches)} case(s) did not match their expected outcome", file=sys.stderr)
             return 1
+        return 0
+
+    if cmd == "export":
+        from dwarpal.export import export_snapshot
+
+        ctx = build_context(settings, use_fake_payments=True)
+        paths = export_snapshot(ctx, args.out)
+        for path in paths:
+            print(f"  {path}")
+        print(f"{len(paths)} files written to {args.out}")
         return 0
 
     if cmd == "metrics":

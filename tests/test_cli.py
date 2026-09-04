@@ -221,3 +221,22 @@ def test_agent_keygen_add_with_pubkey_list_and_signed_demo(run):
     assert code == 0 and "signed" in out.lower()
     code, out = run("demo", "--scenario", "happy", "--payments", "fake", "--sign")
     assert code == 0 and "ed25519" in out.lower()
+
+
+def test_export_writes_the_agent_facing_documents_as_files(run, tmp_path):
+    run("init")
+    run("seed")
+    out = tmp_path / "snapshot"
+    code, text = run("export", "--out", str(out))
+    assert code == 0 and "3 files" in text
+    disc = json.loads((out / ".well-known" / "agent-commerce.json").read_text(encoding="utf-8"))
+    assert disc["merchant_id"] == "trail-and-turf" and disc["request_signing"]["alg"] == "ed25519"
+    assert disc["checkout_url"].endswith("/agent/v1/checkout_sessions")
+    feed = json.loads((out / "feed.json").read_text(encoding="utf-8"))
+    assert feed["count"] == 10 and feed["items"][0]["price_paise"] > 0
+    assert "source" not in feed["items"][0]  # internal fields never reach the feed
+    policy = json.loads((out / "policy.json").read_text(encoding="utf-8"))
+    assert "max_order_paise" in policy and "footwear" in policy["allowed_categories"]
+    first = (out / "feed.json").read_bytes()
+    code, _ = run("export", "--out", str(out))
+    assert code == 0 and (out / "feed.json").read_bytes() == first  # regenerating is a no-op
