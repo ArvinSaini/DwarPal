@@ -184,3 +184,24 @@ def test_ledger_tamper_without_a_seq(run):
     assert code == 0 and "Tampered with event" in out
     code, out = run("ledger", "verify")
     assert code == 2 and "BROKEN" in out
+
+
+def test_ledger_anchor_detects_a_cut_tail(run):
+    import re
+    run("init")
+    run("seed")
+    run("demo", "--scenario", "happy", "--payments", "fake")
+    code, out = run("ledger", "anchor")
+    anchor = out.strip().splitlines()[-1]
+    assert code == 0 and re.fullmatch(r"\d+:[0-9a-f]{64}", anchor)
+    code, out = run("ledger", "verify", "--anchor", anchor)
+    assert code == 0 and "anchor" in out
+    conn = connect(run.db)
+    conn.execute("delete from ledger where seq = (select max(seq) from ledger)")
+    conn.close()
+    code, out = run("ledger", "verify")
+    assert code == 0  # a cut tail is invisible to plain verification...
+    code, out = run("ledger", "verify", "--anchor", anchor)
+    assert code == 2 and "shorter" in out  # ...and visible with the anchor
+    code, out = run("ledger", "verify", "--anchor", "garbage")
+    assert code == 1

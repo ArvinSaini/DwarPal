@@ -13,6 +13,7 @@ from dwarpal.config import Settings
 from dwarpal.context import build_context
 from dwarpal.demo import SCENARIOS
 from dwarpal.enrichment import EnrichmentStore, FakeEnricher
+from dwarpal.ledger import parse_anchor
 from dwarpal.money import rupees
 from dwarpal.payments import PaymentsError
 from dwarpal.policy import PolicyError
@@ -100,7 +101,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     s = sub.add_parser("ledger", help="verify, show, tamper (demo) or export a receipt")
     ss = s.add_subparsers(dest="ledger_cmd", required=True)
-    ss.add_parser("verify")
+    vf = ss.add_parser("verify")
+    vf.add_argument("--anchor", help="a <seq>:<hash> printed earlier by `ledger anchor`; also proves the tail "
+                                     "was not cut or rewritten since")
+    ss.add_parser("anchor", help="print the head as <seq>:<hash>; keep it outside the database")
     ss.add_parser("replay", help="re-run every recorded gate decision from its recorded input and compare")
     sh = ss.add_parser("show")
     sh.add_argument("--limit", type=int, default=50, help="show the last N events")
@@ -303,10 +307,18 @@ def _dispatch(args, settings: Settings) -> int:
 
     if cmd == "ledger":
         ctx = build_context(settings, use_fake_payments=True)
+        if args.ledger_cmd == "anchor":
+            print(ctx.ledger.anchor())
+            return 0
         if args.ledger_cmd == "verify":
-            v = ctx.ledger.verify()
+            try:
+                anchor = parse_anchor(args.anchor) if args.anchor else None
+            except ValueError as exc:
+                raise ConfigError(str(exc))
+            v = ctx.ledger.verify(anchor=anchor)
             if v.ok:
-                print(f"ledger chain verified: {v.count} events, head {ctx.ledger.head()}")
+                print(f"ledger chain verified: {v.count} events, head {ctx.ledger.head()}"
+                      + (f"; anchor {anchor.seq}:{anchor.hash[:12]}… present" if anchor else ""))
                 return 0
             print(f"ledger chain BROKEN at seq {v.bad_seq}: {v.detail}")
             return 2
