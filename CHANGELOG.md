@@ -18,6 +18,14 @@ versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `demo --sign` runs a signing buyer. The discovery document advertises `request_signing`.
 - `agents.public_key` column (added to older databases on `init`) and an `agent_nonces` table.
 - New dependency: `cryptography`.
+- `python -m dwarpal export --out data` writes the discovery document, the agent feed and the merchant policy as
+  JSON files; `data/` holds the snapshot for the demo merchant and `make reports` regenerates it.
+- Five generated UML diagrams in the README (`docs/img/`, `scripts/make_diagrams.py`).
+
+### Changed
+- The README's "Honest limitations" is now "Scope and guarantees": every boundary is paired with the mechanism
+  that holds it and the point where it stops.
+- The prose name is DwarPal; the package, CLI and env vars stay `dwarpal`.
 
 ## [0.1.0] - 2026-09-03
 
