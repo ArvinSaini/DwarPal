@@ -45,3 +45,36 @@ def test_all_lists_in_creation_order(conn, clock):
 def test_revoke_unknown_raises(conn, clock):
     with pytest.raises(KeyError):
         AgentStore(conn, clock).revoke("agt_nope")
+
+
+# -- request signing: an agent may register an Ed25519 public key -----------------------------------
+
+def test_register_with_a_public_key_stores_it_and_marks_the_agent_as_signing(conn, clock):
+    from dwarpal.signing import generate_keypair
+    store = AgentStore(conn, clock)
+    _, public_b64 = generate_keypair()
+    agent, key = store.register("signer", public_key=public_b64)
+    assert agent.public_key == public_b64 and agent.signs_requests
+    assert store.authenticate(key).public_key == public_b64
+    plain, _ = store.register("plain")
+    assert plain.public_key is None and not plain.signs_requests
+    assert plain.to_dict()["signs_requests"] is False and agent.to_dict()["signs_requests"] is True
+
+
+def test_register_rejects_a_malformed_public_key(conn, clock):
+    store = AgentStore(conn, clock)
+    with pytest.raises(ValueError):
+        store.register("signer", public_key="not-a-key")
+    assert store.all() == []
+
+
+def test_nonces_are_remembered_per_agent_and_pruned(conn, clock):
+    store = AgentStore(conn, clock)
+    a, _ = store.register("a")
+    b, _ = store.register("b")
+    assert store.remember_nonce(a.id, "n1", clock.now) is True
+    assert store.remember_nonce(a.id, "n1", clock.now) is False   # replay
+    assert store.remember_nonce(b.id, "n1", clock.now) is True    # another agent's nonce space
+    clock.tick(10_000)
+    assert store.prune_nonces(clock.now, max_age_s=600) == 2
+    assert store.remember_nonce(a.id, "n1", clock.now) is True    # forgotten after pruning

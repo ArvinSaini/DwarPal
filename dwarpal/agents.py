@@ -9,6 +9,7 @@ from typing import Callable
 
 from dwarpal.db import tx
 from dwarpal.ids import new_id
+from dwarpal.signing import load_public_key
 
 
 @dataclass
@@ -17,9 +18,15 @@ class Agent:
     name: str
     status: str
     created_at: int
+    public_key: str | None = None  # base64 Ed25519; set => every request must be signed
+
+    @property
+    def signs_requests(self) -> bool:
+        return bool(self.public_key)
 
     def to_dict(self) -> dict:
-        return {"id": self.id, "name": self.name, "status": self.status, "created_at": self.created_at}
+        return {"id": self.id, "name": self.name, "status": self.status, "created_at": self.created_at,
+                "signs_requests": self.signs_requests}
 
 
 def hash_key(key: str) -> str:
@@ -33,18 +40,35 @@ class AgentStore:
 
     @staticmethod
     def _row(row) -> Agent:
-        return Agent(row["id"], row["name"], row["status"], row["created_at"])
+        return Agent(row["id"], row["name"], row["status"], row["created_at"], row["public_key"])
 
-    def register(self, name: str) -> tuple[Agent, str]:
+    def register(self, name: str, public_key: str | None = None) -> tuple[Agent, str]:
         name = name.strip()
         if not name:
             raise ValueError("agent name must not be empty")
+        public_key = (public_key or "").strip() or None
+        if public_key:
+            load_public_key(public_key)  # ValueError if it is not a 32-byte Ed25519 key
         key = "agk_" + secrets.token_urlsafe(24)
-        agent = Agent(new_id("agt"), name, "active", self.clock())
+        agent = Agent(new_id("agt"), name, "active", self.clock(), public_key)
         with tx(self.conn):
-            self.conn.execute("insert into agents(id, name, api_key_hash, status, created_at) values (?, ?, ?, ?, ?)",
-                              (agent.id, agent.name, hash_key(key), agent.status, agent.created_at))
+            self.conn.execute("insert into agents(id, name, api_key_hash, status, created_at, public_key) "
+                              "values (?, ?, ?, ?, ?, ?)",
+                              (agent.id, agent.name, hash_key(key), agent.status, agent.created_at, public_key))
         return agent, key
+
+    # -- replay protection for signing agents ----------------------------------------------------
+
+    def remember_nonce(self, agent_id: str, nonce: str, now: int) -> bool:
+        """True the first time this agent presents this nonce, False on every replay."""
+        with tx(self.conn):
+            cur = self.conn.execute("insert or ignore into agent_nonces(agent_id, nonce, ts) values (?, ?, ?)",
+                                    (agent_id, nonce, now))
+            return cur.rowcount == 1
+
+    def prune_nonces(self, now: int, max_age_s: int) -> int:
+        with tx(self.conn):
+            return self.conn.execute("delete from agent_nonces where ts < ?", (now - max_age_s,)).rowcount
 
     def authenticate(self, key: str | None) -> Agent | None:
         """Return the agent for this key whatever its status; the gate reports a revoked agent explicitly."""
