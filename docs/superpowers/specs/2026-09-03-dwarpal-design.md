@@ -241,9 +241,9 @@ Demo merchant: "Trail & Turf", a sports goods store. Seed catalog (INR): running
 
 Test mode only. The human completes the payment on the link; Razorpay has no public delegated-payment token for agents yet, so "end to end" means the agent does everything up to and after the payment authorisation. Polling by default; webhooks optional. One merchant, one process, SQLite. Bearer keys rather than signed mandates. LLM output never reaches the gate without merchant approval (enrichment) or deterministic validation (offers). UAP has no public spec; nothing here claims conformance to UAP, ACP, UCP or AP2.
 
-## 17. Related work
+## 17. Protocol context
 
-MandateMesh (github.com/PulkitGarg31/mandatemesh, MIT): a buyer-side design where a user-signed mandate chain and a pure-function gate bound an untrusted LLM shopper. DwarPal is the merchant-side complement: the store's policy, the store's view of each agent's mandate, the store's catalog and cross-sell. No code is shared. Also: OpenAI/Stripe ACP (checkout session shape), Google AP2 (mandate vocabulary), Google UCP, NPCI UAP (registered agents, user-set limits), UPI Circle.
+OpenAI/Stripe ACP (checkout session shape), Google AP2 (mandate vocabulary), Google UCP, NPCI UAP (registered agents, user-set limits), UPI Circle. `docs/protocol-mapping.md` says what is borrowed from each; nothing claims conformance.
 
 ## 18. Build order
 

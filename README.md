@@ -255,14 +255,6 @@ payment attempts, approve/decline review, refund, cancel), ledger (verify, repla
 - The ledger is tamper-evident, not tamper-proof: it detects modification, insertion, deletion and reordering, not truncation of the tail. Keep the head hash elsewhere.
 - Nothing here claims conformance to ACP, AP2, UCP or UAP; `docs/protocol-mapping.md` says what is borrowed.
 
-## Related work
-
-[MandateMesh](https://github.com/PulkitGarg31/mandatemesh) (MIT) is a buyer-side design for the same track: a
-user-signed mandate chain and a pure-function gate bound an untrusted LLM shopper. DwarPal is the merchant-side
-complement: the store's policy, the store's view of each agent's mandate, the store's catalog and cross-sell, a
-merchant review queue instead of a user step-up, gated refunds and offline replay. No code is shared. Protocol
-context: OpenAI/Stripe ACP, Google AP2 and UCP, NPCI UAP, UPI Circle.
-
 ## Future work
 
 Signed mandates (AP2 verifiable credentials); an MCP server over the same API; a policy compiler (plain English →
