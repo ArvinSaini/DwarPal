@@ -1,7 +1,7 @@
 # Form answers (draft; paste into the Razorpay AI Buildathon form)
 
 **Project name**
-Dwarpal: makes a Razorpay merchant sellable to AI buyer agents, safely.
+DwarPal: makes a Razorpay merchant sellable to AI buyer agents, safely.
 
 **Track**
 Track 01, AI Growth & Agentic Commerce.
@@ -10,7 +10,7 @@ Track 01, AI Growth & Agentic Commerce.
 AI assistants are starting to shop on people's behalf, and NPCI's Unified Agent Protocol, Razorpay's own
 agentic-payments pilots and the OpenAI/Stripe Agentic Commerce Protocol all point the same way: merchants will
 soon be asked to sell to machines. A Razorpay merchant today has a website built for humans and no safe way to
-let an agent buy. Dwarpal is the merchant-side gateway that fixes that on Razorpay test mode.
+let an agent buy. DwarPal is the merchant-side gateway that fixes that on Razorpay test mode.
 
 It gives the merchant an agent-readable catalog, synced from their Razorpay Items and enriched by a language
 model whose proposals the merchant approves before the store trusts them. It exposes ACP-shaped checkout-session

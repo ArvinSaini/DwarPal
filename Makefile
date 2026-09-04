@@ -1,4 +1,4 @@
-# Dwarpal task runner. Every target is offline unless it says otherwise.
+# DwarPal task runner. Every target is offline unless it says otherwise.
 # Windows without make: run the commands under each target directly, or use PowerShell equivalents in CONTRIBUTING.md.
 
 PYTHON ?= python

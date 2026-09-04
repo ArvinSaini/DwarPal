@@ -36,4 +36,4 @@ def test_main_writes_a_report_file(tmp_path):
     out = tmp_path / "metrics.md"
     assert main(["--n", "5", "--seed", "2", "--out", str(out)]) == 0
     text = out.read_text(encoding="utf-8")
-    assert "Dwarpal batch metrics" in text and "5 sessions" in text
+    assert "DwarPal batch metrics" in text and "5 sessions" in text

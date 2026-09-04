@@ -63,10 +63,10 @@ def build(skip_tests: bool) -> str:
     # -- tests -------------------------------------------------------------------------------------
     passed, failed = (0, 0) if skip_tests else run_tests()
 
-    L += [f"# Dwarpal evaluation", "",
+    L += [f"# DwarPal evaluation", "",
           f"Generated {now} by `python scripts/make_evaluation.py` (version {__version__}). Every number below is "
           f"computed in that run; nothing is typed in by hand.", "",
-          "**What was evaluated:** the deterministic parts of Dwarpal, the policy gate, the checkout state machine, "
+          "**What was evaluated:** the deterministic parts of DwarPal, the policy gate, the checkout state machine, "
           "the mandate accounting, the ledger, on data the repo generates for itself: hand-built adversarial and "
           "benign carts, and seeded batches of scripted sessions against a fake Razorpay. **What was not:** real "
           "Razorpay calls (need test keys), a real language model (need a key), real merchant traffic (none exists "

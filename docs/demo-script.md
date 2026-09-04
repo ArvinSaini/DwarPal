@@ -19,7 +19,7 @@ Open the dashboard login URL in the browser. Keep the terminal ready for a secon
 Say it over the overview page: NPCI's Unified Agent Protocol is being unveiled at Global Fintech Fest this
 week; Razorpay already pilots agentic payments inside Claude; OpenAI and Stripe's ACP defines the endpoints a
 merchant needs to be sellable to an AI buyer. The open question is the same everywhere: how does a merchant
-let a machine buy without letting it go rogue? Dwarpal is the merchant's answer, on Razorpay test mode.
+let a machine buy without letting it go rogue? DwarPal is the merchant's answer, on Razorpay test mode.
 
 ## Beat 2: merchant setup (60 s)
 

@@ -49,7 +49,7 @@ def _razorpay_client(settings: Settings):
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="dwarpal",
-                                description="Dwarpal: makes a Razorpay merchant sellable to AI buyer agents, safely.")
+                                description="DwarPal: makes a Razorpay merchant sellable to AI buyer agents, safely.")
     p.add_argument("--db", help="SQLite file (default: DWARPAL_DB or dwarpal.db)")
     p.add_argument("--version", action="version", version=__version__)
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -274,7 +274,7 @@ def _dispatch(args, settings: Settings) -> int:
         ctx = build_context(settings, use_fake_payments=args.fake_payments)
         app = create_app(ctx)
         base = f"http://{args.host}:{args.port}"
-        print(f"Dwarpal for {settings.merchant_name}: payments={ctx.payments_mode}, "
+        print(f"DwarPal for {settings.merchant_name}: payments={ctx.payments_mode}, "
               f"model={'configured' if settings.llm_configured else 'fake'}")
         print(f"  discovery  {base}/.well-known/agent-commerce.json")
         print(f"  api docs   {base}/docs")

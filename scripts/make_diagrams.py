@@ -202,7 +202,7 @@ def system_context() -> str:
     b += arrow([(782, 449), (824, 449)])
 
     return page(1000, 582,
-                "Dwarpal — system context and trust boundary",
+                "DwarPal — system context and trust boundary",
                 "One Python process, one SQLite file. The model proposes; deterministic code disposes; "
                 "only the payments adapter can reach Razorpay.",
                 b, [("deterministic code", "core"), ("the model proposes", "model"), ("external", "ext")])
@@ -214,7 +214,7 @@ def system_context() -> str:
 
 LANES = [
     ("Buyer agent", "the demo LLM shopper", "ext"),
-    ("Dwarpal API", "api.py + sessions.py", "core"),
+    ("DwarPal API", "api.py + sessions.py", "core"),
     ("Gate", "gate.py — pure", "core"),
     ("Mandates", "mandates.py", "core"),
     ("Payments", "razorpay_client.py", "core"),

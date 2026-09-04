@@ -36,7 +36,7 @@ def main(argv=None) -> int:
         return 1
 
     now = int(time.time())
-    req = PaymentRequest("cs_smoke", "agt_smoke", "mnd_smoke", args.amount, "Dwarpal smoke test", 1,
+    req = PaymentRequest("cs_smoke", "agt_smoke", "mnd_smoke", args.amount, "DwarPal smoke test", 1,
                          now + 20 * 60, f"smoke-{now}")
     try:
         link = pay.create_link(req)

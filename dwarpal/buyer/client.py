@@ -1,4 +1,4 @@
-"""HTTP client for the Dwarpal agent API. Works against a live server or an in-process TestClient."""
+"""HTTP client for the DwarPal agent API. Works against a live server or an in-process TestClient."""
 from __future__ import annotations
 
 import uuid

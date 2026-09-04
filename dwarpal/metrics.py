@@ -258,7 +258,7 @@ def _outcome(s: dict) -> str:
 
 def render_markdown(r: Report) -> str:
     lines = [
-        "# Dwarpal batch metrics", "",
+        "# DwarPal batch metrics", "",
         f"{r.sessions} sessions, seed {r.seed}, {r.agents} agents, scripted carts against the real gate and "
         f"state machine with fake payments. Generated {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}.", "",
         "## Outcomes", "", "| Outcome | Sessions |", "|---|---|",

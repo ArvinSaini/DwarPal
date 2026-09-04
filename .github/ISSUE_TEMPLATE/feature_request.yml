@@ -1,11 +1,11 @@
 name: Feature request
-description: Suggest a capability for Dwarpal
+description: Suggest a capability for DwarPal
 labels: [enhancement]
 body:
   - type: markdown
     attributes:
       value: |
-        Dwarpal is a defensive, merchant-side control. Requests that add offensive capability, such as attacking a
+        DwarPal is a defensive, merchant-side control. Requests that add offensive capability, such as attacking a
         merchant, evading another store's controls, or generating fraudulent transactions, will be closed.
 
   - type: textarea

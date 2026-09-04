@@ -31,7 +31,7 @@ class RazorpayPayments:
     def __init__(self, key_id: str | None, key_secret: str | None, client=None, timeout_s: int = REQUEST_TIMEOUT_S,
                  clock: Callable[[], int] | None = None):
         if not key_id or not key_id.startswith("rzp_test_"):
-            raise ValueError("Dwarpal only runs on Razorpay TEST keys (rzp_test_...); refusing this key id")
+            raise ValueError("DwarPal only runs on Razorpay TEST keys (rzp_test_...); refusing this key id")
         self.key_id = key_id
         self.timeout_s = timeout_s
         self.clock = clock or (lambda: int(time.time()))
@@ -40,7 +40,7 @@ class RazorpayPayments:
 
             client = razorpay.Client(auth=(key_id, key_secret))
             try:
-                client.set_app_details({"title": "Dwarpal", "version": __version__})
+                client.set_app_details({"title": "DwarPal", "version": __version__})
             except Exception:
                 pass
         self.client = client

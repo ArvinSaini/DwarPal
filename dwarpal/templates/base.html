@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Dwarpal{% endblock %} · {{ merchant_name }}</title>
+  <title>{% block title %}DwarPal{% endblock %} · {{ merchant_name }}</title>
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 <header class="top">
-  <div class="brand">Dwarpal <span class="muted">for {{ merchant_name }}</span></div>
+  <div class="brand">DwarPal <span class="muted">for {{ merchant_name }}</span></div>
   <nav>
     <a href="/dashboard/" class="{{ 'active' if path == '/dashboard/' else '' }}">Overview</a>
     <a href="/dashboard/products" class="{{ 'active' if path.startswith('/dashboard/products') else '' }}">Products</a>

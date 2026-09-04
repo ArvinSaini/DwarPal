@@ -1,4 +1,4 @@
-# Dwarpal test results
+# DwarPal test results
 
 Generated 2026-09-03 18:45 UTC by `python scripts/make_test_report.py` (version 0.1.0) from a full `pytest` run on this machine. Nothing below is typed by hand.
 

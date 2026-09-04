@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 582" width="1000" height="582" role="img" aria-label="Dwarpal — system context and trust boundary">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 582" width="1000" height="582" role="img" aria-label="DwarPal — system context and trust boundary">
 <rect width="1000" height="582" rx="10" fill="#fbfaf7" stroke="#e0dbd0"/>
-<text x="24.0" y="36.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="19" fill="#1b1f24" text-anchor="start" font-weight="600">Dwarpal — system context and trust boundary</text>
+<text x="24.0" y="36.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="19" fill="#1b1f24" text-anchor="start" font-weight="600">DwarPal — system context and trust boundary</text>
 <text x="24.0" y="57.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="12" fill="#5f6b7a" text-anchor="start" font-weight="normal">One Python process, one SQLite file. The model proposes; deterministic code disposes; only the payments adapter can reach Razorpay.</text>
 <rect x="604.144" y="22" width="12" height="12" rx="3" fill="#e8f1f8" stroke="#2b5f8e" stroke-width="1.2"/>
 <text x="622.1" y="32.5" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="10.8" fill="#5f6b7a" text-anchor="start" font-weight="normal">deterministic code</text>
