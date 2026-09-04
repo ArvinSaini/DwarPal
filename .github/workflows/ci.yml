@@ -70,10 +70,32 @@ jobs:
             echo "::endgroup::"
           done
 
+      - name: A buyer that signs every request (ed25519) still gets through
+        run: python -m dwarpal --db ci.db demo --scenario happy --payments fake --wait 30 --sign | tee /tmp/sign.txt
+                && grep -q "signed (ed25519)" /tmp/sign.txt
+
       - name: Ledger verifies and every decision replays
         run: |
           python -m dwarpal --db ci.db ledger verify
           python -m dwarpal --db ci.db ledger replay
+
+      - name: An anchor catches a cut tail that plain verification cannot see
+        run: |
+          ANCHOR=$(python -m dwarpal --db ci.db ledger anchor)
+          python -m dwarpal --db ci.db ledger verify --anchor "$ANCHOR"
+          cp ci.db cut.db
+          python -c "import sqlite3; c=sqlite3.connect('cut.db'); c.execute('delete from ledger where seq=(select max(seq) from ledger)'); c.commit()"
+          python -m dwarpal --db cut.db ledger verify
+          if python -m dwarpal --db cut.db ledger verify --anchor "$ANCHOR"; then
+            echo "verify --anchor should have failed on a cut ledger"; exit 1
+          fi
+
+      - name: The committed data/ snapshot matches what the server would serve
+        run: |
+          python -m dwarpal --db ci.db export --out /tmp/snapshot
+          for f in .well-known/agent-commerce.json feed.json policy.json; do
+            diff "/tmp/snapshot/$f" "data/$f" || { echo "data/$f is stale: run python -m dwarpal export --out data"; exit 1; }
+          done
 
       - name: Tampering is detected (verify must fail afterwards)
         run: |
