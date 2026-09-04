@@ -151,9 +151,12 @@ payload}))` with a genesis previous hash of 64 zeros. `verify` recomputes every 
 bad sequence number. `receipt` renders one session as Markdown with the cart, the decision trail, the payment
 events and the chain status. `tamper` edits one amount in place for the demo so `verify` shows the break.
 
-The chain detects modification, insertion, deletion and reordering. It does not detect truncation of the
-tail or a re-hashed last event, so the receipt's head hash is the anchor to keep somewhere else. Tamper-evident,
-not tamper-proof.
+The chain detects modification, insertion, deletion and reordering. On its own it cannot detect a cut tail or a
+last event that was replaced and re-hashed, because nothing after the cut vouches for what was there. An **anchor**
+closes that gap: `ledger anchor` prints the head as `<seq>:<hash>`, every `GET …/trail` response and `/health`
+carry the same pair as `ledger_head`, and `ledger verify --anchor <seq>:<hash>` fails if the ledger is shorter than
+the anchor or the event at that seq no longer has that hash. An agent that keeps the anchor from its last trail
+holds proof the merchant cannot shrink the record past it. Tamper-evident with a witness, not tamper-proof.
 
 ### Replay
 

@@ -19,6 +19,7 @@ state-machine transition, or a ledger property; none depends on a model behaving
 | Over-refund or duplicate refund | merchant operator error | refund more than captured, or twice for the same shortfall | RF02, RF03; refunds are gated and logged like payments | `test_refund_is_gated` |
 | Large order slips through unseen | agent | a single big cart within caps | review threshold: G14 holds it for a human; approval covers that exact total | `test_review_approval_is_tied_to_the_total` |
 | Ledger edited after the fact | insider | change an amount, delete or reorder an event | hash chain; `verify` names the first bad sequence | `test_tamper_breaks_verify_at_that_seq` |
+| Ledger tail cut or rewritten | insider | delete the last events, or replace the last one and re-hash | anchor `<seq>:<hash>` handed to every agent in `/trail` and printed by `ledger anchor`; `verify --anchor` fails when the chain is shorter than it or differs at it | `test_verify_with_anchor_detects_a_truncated_tail`, `test_verify_with_anchor_detects_a_rewritten_tail`, `test_ledger_anchor_detects_a_cut_tail` |
 | Ledger records a decision the gate would not make | insider or bug | write a fake ALLOW | every decision carries its input; `replay` re-runs the pure gate and reports divergences | `tests/test_replay.py` |
 | Internal error becomes an accidental ALLOW | bug | a malformed input crashes a rule | G99 guard: any exception is a DENY with the exception type in the trail | `test_g99_guard_never_raises` |
 | Model outage or garbage output | provider | the LLM is down or returns prose | enrichment skips and records it; cross-sell returns no offers; the buyer fails closed with `no_plan` | `test_skipped_proposals_are_recorded`, `test_llm_planner_provider_error_fails_closed` |
@@ -29,7 +30,8 @@ state-machine transition, or a ledger property; none depends on a model behaving
   real deployment.
 - Signed mandates (AP2-style verifiable credentials) are future work; today the merchant's database is the root
   of trust for what an agent may spend.
-- The ledger is tamper-evident, not tamper-proof: tail truncation and a re-hashed last event are not detected.
-  Keep the head hash somewhere else.
+- The ledger is tamper-evident, not tamper-proof: a cut or rewritten tail is only caught by comparing against an
+  anchor held outside the database (an agent's last `ledger_head`, or a `ledger anchor` value kept elsewhere).
+  Nothing detects it if no one kept an anchor.
 - One process, one SQLite file. Concurrency is handled with a per-connection lock, not with a database that
   serialises writers across processes.

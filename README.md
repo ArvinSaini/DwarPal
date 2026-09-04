@@ -44,7 +44,7 @@ Track 01 asks: *"Every money action explainable, bounded and gated. Show the aud
 | **Explainable** | Every checkout runs the 15-rule gate and records every rule with a plain-English detail (`gate.decision` in the ledger, `decision.checks[]` in the API, the session page in the dashboard). A refused cart tells the agent which rule and why. Refunds get the same treatment (`refund.decision`). |
 | **Bounded** | Merchant policy (categories sold to agents, max order, stock, blocked SKUs, quantity per line, review threshold, refund window) plus a per-agent mandate (per order, per day, total, categories, expiry). Spend counts reserved *and* committed money, so a pending payment cannot be double-spent. `dwarpal/gate.py` is a pure function. |
 | **Gated** | The LLM never decides about money. It proposes catalog metadata (merchant approves), picks cross-sell offers from a pre-filtered candidate set (agent may accept, gate re-judges), and plans the demo buyer. `SessionService.complete` is the only path that creates a Payment Link, and only after ALLOW plus a reservation. Orders above the review threshold wait for a human. Refunds pass rules RF00 to RF04. |
-| **Audit trail** | Append-only ledger, `sha256(prev_hash + event)`. `ledger verify` proves nothing was edited; `ledger replay` re-runs every recorded decision from its recorded input and proves the reasoning; `ledger receipt <session>` exports one session; `ledger tamper <seq>` for the camera. |
+| **Audit trail** | Append-only ledger, `sha256(prev_hash + event)`. `ledger verify` proves nothing was edited; `ledger replay` re-runs every recorded decision from its recorded input and proves the reasoning; `ledger receipt <session>` exports one session; `ledger anchor` prints the head as `seq:hash` and `ledger verify --anchor` proves the tail was not cut or rewritten since; `ledger tamper <seq>` for the camera. |
 | **Failure handled** | Payment fails on the bank page → recorded, gate re-run in retry mode, old link cancelled, fresh link issued; second failure → abandon and release. Also: cap denials at complete, provider errors (release, 502, agent may retry), duplicate webhooks, a cancel Razorpay refuses (final poll; a late capture is never recorded as cancelled), revoked agents, poisoned catalog text, model outages (fail closed). |
 
 ## Quickstart
@@ -87,7 +87,7 @@ POST /agent/v1/checkout_sessions/{id}             replace items; include an offe
 POST /agent/v1/checkout_sessions/{id}/complete    authoritative gate run, reservation, Razorpay link -> payment_pending
 GET  /agent/v1/checkout_sessions/{id}             current state (polls Razorpay when pending)
 POST /agent/v1/checkout_sessions/{id}/cancel      cancel link, release reservation
-GET  /agent/v1/checkout_sessions/{id}/trail       the session's ledger events + chain verification
+GET  /agent/v1/checkout_sessions/{id}/trail       the session's ledger events, chain verification, ledger_head anchor
 POST /webhooks/razorpay                           optional; polling covers everything it does
 ```
 
@@ -252,7 +252,7 @@ payment attempts, approve/decline review, refund, cancel), ledger (verify, repla
 - Polling by default (reconciler thread every 3 s, or on `GET`); the webhook is optional and does nothing polling does not.
 - About 30 Payment Links per test account, so tests and metrics use the fake adapter; real calls are for the smoke script and the recorded demo.
 - Bearer keys, not signed AP2-style mandates. One merchant, one process, SQLite.
-- The ledger is tamper-evident, not tamper-proof: it detects modification, insertion, deletion and reordering, not truncation of the tail. Keep the head hash elsewhere.
+- The ledger is tamper-evident, not tamper-proof: the chain alone detects modification, insertion, deletion and reordering; a cut or rewritten tail needs an anchor kept outside the database, which every `/trail` response and `ledger anchor` hand you, and `ledger verify --anchor` checks.
 - Nothing here claims conformance to ACP, AP2, UCP or UAP; `docs/protocol-mapping.md` says what is borrowed.
 
 ## Future work

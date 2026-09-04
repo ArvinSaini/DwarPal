@@ -5,7 +5,12 @@ versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+- Ledger anchoring. `ledger anchor` prints the head as `<seq>:<hash>`; `ledger verify --anchor <seq>:<hash>` fails
+  when the chain is shorter than the anchor or the event at that seq has a different hash, which the chain alone
+  could not see. Every `GET …/trail` response and `/health` carry the same pair as `ledger_head`, so an agent that
+  keeps its last trail holds an anchor the merchant cannot shrink the ledger past. The dashboard's ledger page shows
+  the current anchor.
 
 ## [0.1.0] - 2026-09-03
 
