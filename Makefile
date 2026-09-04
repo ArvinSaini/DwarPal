@@ -49,6 +49,7 @@ reports:  ## Regenerate every computed document
 	$(PYTHON) -m dwarpal metrics --n 50  --seed 7  --out docs/metrics-2026-09-03.md
 	$(PYTHON) -m dwarpal metrics --n 500 --seed 11 --out docs/metrics-500-sessions.md
 	$(PYTHON) scripts/make_diagrams.py
+	$(PYTHON) -m dwarpal --db .reports.db init && $(PYTHON) -m dwarpal --db .reports.db seed && $(PYTHON) -m dwarpal --db .reports.db export --out data && rm -f .reports.db
 
 smoke:  ## One real Razorpay test-mode Payment Link (needs rzp_test_ keys in .env)
 	$(PYTHON) scripts/smoke_razorpay.py

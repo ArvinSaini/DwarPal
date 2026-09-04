@@ -62,6 +62,7 @@ python -m dwarpal eval --out docs/gate-eval.md
 python -m dwarpal metrics --n 50  --seed 7  --out docs/metrics-2026-09-03.md
 python -m dwarpal metrics --n 500 --seed 11 --out docs/metrics-500-sessions.md
 python scripts/make_diagrams.py        # docs/img/*.svg, the README diagrams
+python -m dwarpal export --out data    # data/: discovery document, agent feed, policy, from a seeded database
 ```
 
 If you change the gate, the state machine or the batch, regenerate all of them in the same commit so the documents
