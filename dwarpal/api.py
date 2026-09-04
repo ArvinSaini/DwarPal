@@ -48,6 +48,44 @@ def require_key(idempotency_key: str | None) -> str:
     return idempotency_key.strip()
 
 
+def discovery_document(ctx: AppContext) -> dict:
+    """What /.well-known/agent-commerce.json serves; also exported to disk by `python -m dwarpal export`."""
+    policy = ctx.policies.get()
+    base = ctx.settings.base_url
+    return {
+        "merchant_id": ctx.settings.merchant_id,
+        "merchant_name": ctx.settings.merchant_name,
+        "currency": "INR",
+        "api_version": API_VERSION,
+        "auth": "bearer",
+        "request_signing": {"alg": SIGNING_ALG, "required": "for agents registered with a public key",
+                            "headers": [HEADER_TIMESTAMP, HEADER_NONCE, HEADER_SIGNATURE],
+                            "canonical": CANONICAL_FORM, "max_skew_s": MAX_SKEW_S,
+                            "replay": "each nonce is accepted once per agent"},
+        "feed_url": f"{base}/agent/v1/products",
+        "checkout_url": f"{base}/agent/v1/checkout_sessions",
+        "payment_rails": ["razorpay:payment_link"],
+        "session_statuses": [NOT_READY, REQUIRES_REVIEW, READY, PENDING, COMPLETED, CANCELED],
+        "policy": {"allowed_categories": policy["allowed_categories"], "max_order_paise": policy["max_order_paise"],
+                   "max_qty_per_line": policy["max_qty_per_line"],
+                   "review_above_paise": policy.get("review_above_paise", 0)},
+        "deviations_from_acp": [
+            "payment_pending: the payer completes a Razorpay Payment Link; complete does not charge synchronously",
+            "requires_review: orders above the merchant's review threshold wait for a human; poll until "
+            "ready_for_payment or change the cart",
+            "agents authenticate with a merchant-issued bearer key, plus Ed25519 request signatures once they "
+            "register a public key; no shared payment token",
+        ],
+        "docs": f"{base}/docs",
+    }
+
+
+def feed_document(ctx: AppContext, q: str | None = None, category: str | None = None) -> dict:
+    """What GET /agent/v1/products serves: merchant-approved fields only, priced from our own catalog."""
+    items = ctx.catalog.feed(q, category)
+    return {"items": items, "count": len(items), "currency": "INR"}
+
+
 def create_app(ctx: AppContext) -> FastAPI:
     app = FastAPI(title="DwarPal", version=__version__,
                   description="Makes a Razorpay merchant sellable to AI buyer agents, safely.")
@@ -110,34 +148,7 @@ def create_app(ctx: AppContext) -> FastAPI:
 
     @app.get("/.well-known/agent-commerce.json")
     def well_known():
-        policy = ctx.policies.get()
-        base = ctx.settings.base_url
-        return {
-            "merchant_id": ctx.settings.merchant_id,
-            "merchant_name": ctx.settings.merchant_name,
-            "currency": "INR",
-            "api_version": API_VERSION,
-            "auth": "bearer",
-            "request_signing": {"alg": SIGNING_ALG, "required": "for agents registered with a public key",
-                                "headers": [HEADER_TIMESTAMP, HEADER_NONCE, HEADER_SIGNATURE],
-                                "canonical": CANONICAL_FORM, "max_skew_s": MAX_SKEW_S,
-                                "replay": "each nonce is accepted once per agent"},
-            "feed_url": f"{base}/agent/v1/products",
-            "checkout_url": f"{base}/agent/v1/checkout_sessions",
-            "payment_rails": ["razorpay:payment_link"],
-            "session_statuses": [NOT_READY, REQUIRES_REVIEW, READY, PENDING, COMPLETED, CANCELED],
-            "policy": {"allowed_categories": policy["allowed_categories"], "max_order_paise": policy["max_order_paise"],
-                       "max_qty_per_line": policy["max_qty_per_line"],
-                       "review_above_paise": policy.get("review_above_paise", 0)},
-            "deviations_from_acp": [
-                "payment_pending: the payer completes a Razorpay Payment Link; complete does not charge synchronously",
-                "requires_review: orders above the merchant's review threshold wait for a human; poll until "
-                "ready_for_payment or change the cart",
-                "agents authenticate with a merchant-issued bearer key, plus Ed25519 request signatures once they "
-                "register a public key; no shared payment token",
-            ],
-            "docs": f"{base}/docs",
-        }
+        return discovery_document(ctx)
 
     @app.get("/health")
     def health():
@@ -152,8 +163,7 @@ def create_app(ctx: AppContext) -> FastAPI:
 
     @router.get("/products")
     def products(q: str | None = None, category: str | None = None, agent=Depends(current_agent)):
-        items = ctx.catalog.feed(q, category)
-        return {"items": items, "count": len(items), "currency": "INR"}
+        return feed_document(ctx, q, category)
 
     @router.post("/checkout_sessions", status_code=201)
     async def create_session(request: Request, agent=Depends(current_agent),

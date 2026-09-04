@@ -314,3 +314,15 @@ def test_bearer_only_agents_are_unaffected_and_discovery_advertises_signing(app_
     assert rs["alg"] == "ed25519" and rs["max_skew_s"] == 300
     assert rs["headers"] == ["X-Agent-Timestamp", "X-Agent-Nonce", "X-Agent-Signature"]
     assert "sha256(body)" in rs["canonical"]
+
+
+# -- the discovery document and the feed are plain functions, so they can be exported as files ----------
+
+def test_discovery_and_feed_documents_match_the_endpoints(app_client, world):
+    from dwarpal.api import discovery_document, feed_document
+    from tests.conftest import make_ctx
+    ctx = make_ctx(world)
+    served = app_client.get("/.well-known/agent-commerce.json", headers={"Authorization": ""}).json()
+    assert discovery_document(ctx) == served
+    assert feed_document(ctx) == app_client.get("/agent/v1/products").json()
+    assert feed_document(ctx, category="footwear")["items"][0]["id"] == "prod_shoes"
