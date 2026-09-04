@@ -1,4 +1,4 @@
-# Dwarpal — Design Spec
+# DwarPal — Design Spec
 
 Date: 2026-09-03. Entry for Razorpay AI Buildathon 2026, Track 01 (AI Growth & Agentic Commerce).
 Status: approved design; implementation plan in `docs/superpowers/plans/`.
@@ -13,7 +13,7 @@ Make any Razorpay merchant sellable to AI buyer agents end to end, on Razorpay t
 - **audited** (a hash-chained ledger with a verify command and a per-session receipt),
 - and the merchant's basket **grows** through a bounded cross-sell whose effect is measured honestly across a batch.
 
-The pitch: "Dwarpal makes a Razorpay merchant sellable to AI agents, safely."
+The pitch: "DwarPal makes a Razorpay merchant sellable to AI agents, safely."
 
 ## 2. Scope
 
@@ -50,7 +50,7 @@ Single Python package `dwarpal/`, one FastAPI process, one SQLite file. Money is
 | Ledger | `ledger.py` | events | DB | append-only hash chain |
 | API | `api.py` | all above | — | bearer agent keys; merchant token for dashboard |
 | Dashboard | `dashboard.py`, `templates/` | all above | — | merchant-only |
-| Buyer agent (demo client) | `buyer/` | the public API only | LLM endpoint, Dwarpal API | outside the merchant trust boundary |
+| Buyer agent (demo client) | `buyer/` | the public API only | LLM endpoint, DwarPal API | outside the merchant trust boundary |
 | Metrics | `metrics.py` | scripted runs on fakes | — | honest numbers |
 | CLI | `cli.py` | — | everything | `python -m dwarpal ...` |
 
@@ -61,7 +61,7 @@ Where the LLM is: enrichment proposals, cross-sell picks, the demo buyer's plann
 ```mermaid
 sequenceDiagram
     participant B as Buyer agent (LLM)
-    participant API as Dwarpal API
+    participant API as DwarPal API
     participant G as Gate (pure)
     participant M as Mandates
     participant X as Cross-sell (LLM)
@@ -243,7 +243,7 @@ Test mode only. The human completes the payment on the link; Razorpay has no pub
 
 ## 17. Related work
 
-MandateMesh (github.com/PulkitGarg31/mandatemesh, MIT): a buyer-side design where a user-signed mandate chain and a pure-function gate bound an untrusted LLM shopper. Dwarpal is the merchant-side complement: the store's policy, the store's view of each agent's mandate, the store's catalog and cross-sell. No code is shared. Also: OpenAI/Stripe ACP (checkout session shape), Google AP2 (mandate vocabulary), Google UCP, NPCI UAP (registered agents, user-set limits), UPI Circle.
+MandateMesh (github.com/PulkitGarg31/mandatemesh, MIT): a buyer-side design where a user-signed mandate chain and a pure-function gate bound an untrusted LLM shopper. DwarPal is the merchant-side complement: the store's policy, the store's view of each agent's mandate, the store's catalog and cross-sell. No code is shared. Also: OpenAI/Stripe ACP (checkout session shape), Google AP2 (mandate vocabulary), Google UCP, NPCI UAP (registered agents, user-set limits), UPI Circle.
 
 ## 18. Build order
 

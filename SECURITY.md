@@ -1,6 +1,6 @@
 # Security policy
 
-Dwarpal decides whether an AI agent may spend a merchant's money. Please treat findings here as you would in any
+DwarPal decides whether an AI agent may spend a merchant's money. Please treat findings here as you would in any
 payments codebase.
 
 ## Reporting a vulnerability
@@ -40,7 +40,7 @@ Out of scope, because they are documented limitations rather than defects:
 
 ## Defense only
 
-Dwarpal is a defensive control. Issues and pull requests that add offensive capability, such as tooling to attack
+DwarPal is a defensive control. Issues and pull requests that add offensive capability, such as tooling to attack
 merchants, evade another store's controls, or generate fraudulent transactions, will be closed.
 
 ## Handling keys

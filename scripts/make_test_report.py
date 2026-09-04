@@ -87,7 +87,7 @@ def build(cases: list[dict]) -> str:
     for c in cases:
         by_file[c["file"]].append(c)
 
-    L = [f"# Dwarpal test results", "",
+    L = [f"# DwarPal test results", "",
          f"Generated {now} by `python scripts/make_test_report.py` (version {__version__}) from a full "
          f"`pytest` run on this machine. Nothing below is typed by hand.", "",
          "## Summary", "", "| Metric | Value |", "|---|---|",

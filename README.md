@@ -1,12 +1,12 @@
-# Dwarpal
+# DwarPal
 
 **Makes a Razorpay merchant sellable to AI buyer agents, safely.**
 
-*Dwarpal* (द्वारपाल) is the gatekeeper: the one who decides who comes through the merchant's door, and on what terms.
+*DwarPal* (द्वारपाल) is the gatekeeper: the one who decides who comes through the merchant's door, and on what terms.
 
 > The model proposes. Deterministic code disposes. Only the payments adapter can reach Razorpay.
 
-[![CI](https://github.com/YOUR-GITHUB-USERNAME/dwarpal/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR-GITHUB-USERNAME/dwarpal/actions/workflows/ci.yml)
+[![CI](https://github.com/ArvinSaini/DwarPal/actions/workflows/ci.yml/badge.svg)](https://github.com/ArvinSaini/DwarPal/actions/workflows/ci.yml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
@@ -18,14 +18,14 @@ Razorpay AI Buildathon 2026 · Track 01: AI Growth & Agentic Commerce · Python 
 
 AI assistants are starting to shop on people's behalf. NPCI's Unified Agent Protocol, Razorpay's agentic-payments
 pilots and the OpenAI/Stripe Agentic Commerce Protocol all point the same way: merchants will be asked to sell to
-machines. Dwarpal is the merchant-side gateway that lets them do it without losing control: an agent-readable
+machines. DwarPal is the merchant-side gateway that lets them do it without losing control: an agent-readable
 catalog, an ACP-shaped checkout API, a deterministic policy gate with a human review queue, per-agent spend mandates
 with reserve/commit/release accounting, Razorpay Payment Links with one gated retry, gated refunds, a hash-chained
 audit ledger that can be replayed, and a bounded cross-sell that grows the basket.
 
 ## How it fits together
 
-![Dwarpal system context. The buyer agent and the merchant sit outside a dashed trust boundary. Inside it, the agent
+![DwarPal system context. The buyer agent and the merchant sit outside a dashed trust boundary. Inside it, the agent
 API and the merchant console both feed one session state machine, which is the only code path that creates a Payment
 Link; under it sit the pure gate, the mandate accounting, the append-only ledger and the Razorpay adapter, then the
 catalog stores and the two model-facing components, all over one SQLite file. Razorpay and the LLM provider are
@@ -50,7 +50,7 @@ Track 01 asks: *"Every money action explainable, bounded and gated. Show the aud
 ## Quickstart
 
 ```powershell
-git clone <this repo>; cd dwarpal
+git clone https://github.com/ArvinSaini/DwarPal.git; cd DwarPal
 python -m pip install -e .                 # Python 3.11+
 copy .env.example .env                     # add rzp_test_ keys to use Razorpay; leave blank to stay fully offline
 python -m dwarpal init
@@ -258,7 +258,7 @@ payment attempts, approve/decline review, refund, cancel), ledger (verify, repla
 ## Related work
 
 [MandateMesh](https://github.com/PulkitGarg31/mandatemesh) (MIT) is a buyer-side design for the same track: a
-user-signed mandate chain and a pure-function gate bound an untrusted LLM shopper. Dwarpal is the merchant-side
+user-signed mandate chain and a pure-function gate bound an untrusted LLM shopper. DwarPal is the merchant-side
 complement: the store's policy, the store's view of each agent's mandate, the store's catalog and cross-sell, a
 merchant review queue instead of a user step-up, gated refunds and offline replay. No code is shared. Protocol
 context: OpenAI/Stripe ACP, Google AP2 and UCP, NPCI UAP, UPI Circle.

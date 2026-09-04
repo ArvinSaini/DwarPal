@@ -1,12 +1,12 @@
-# Contributing to Dwarpal
+# Contributing to DwarPal
 
-Thanks for looking. Dwarpal is a Razorpay AI Buildathon 2026 entry (Track 01), so the code is written to be read:
+Thanks for looking. DwarPal is a Razorpay AI Buildathon 2026 entry (Track 01), so the code is written to be read:
 small modules, one responsibility each, and a test for every rule.
 
 ## Set up
 
 ```powershell
-git clone <this repo>; cd dwarpal
+git clone https://github.com/ArvinSaini/DwarPal.git; cd DwarPal
 python -m pip install -e ".[dev]"     # Python 3.11+
 copy .env.example .env                # optional: only needed for real Razorpay or a real model
 python -m pytest -q                   # 286 tests, offline, about 10 seconds
@@ -31,7 +31,7 @@ python -m dwarpal serve                # API and dashboard on http://127.0.0.1:8
 **The model proposes, deterministic code disposes.** A language model may propose catalog metadata, suggest
 cross-sell add-ons, and plan the demo buyer's actions. It must never decide whether money moves. If a change would
 let model output reach the gate, the mandate accounting, a session transition, a Razorpay call or the ledger without
-passing deterministic validation or a human approval, it does not belong in Dwarpal.
+passing deterministic validation or a human approval, it does not belong in DwarPal.
 
 Concretely:
 

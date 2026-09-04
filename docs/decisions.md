@@ -1,7 +1,7 @@
 # Decision records
 
 ## D1. The merchant is the customer, not the buyer
-Track 01 says "grow the merchant's revenue and make them sellable to AI buyers". Dwarpal therefore lives on the
+Track 01 says "grow the merchant's revenue and make them sellable to AI buyers". DwarPal therefore lives on the
 merchant's side: the store's policy, the store's view of each agent's mandate, the store's catalog and cross-sell.
 Consequence: the buyer agent in the repo is a demo client, deliberately outside the trust boundary.
 

@@ -73,9 +73,9 @@ reconcile, ledger, review, refund, eval, metrics, demo.
 
 ### Notes
 
-- The project was named AgentGate during development and renamed to Dwarpal (द्वारपाल, gatekeeper) before release.
+- The project was named AgentGate during development and renamed to DwarPal (द्वारपाल, gatekeeper) before release.
 - Razorpay has no public delegated-payment token for agents yet, so a human completes the Payment Link. The extra
   `payment_pending` and `requires_review` statuses are documented deviations from ACP.
 
-[Unreleased]: https://github.com/YOUR-GITHUB-USERNAME/dwarpal/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/YOUR-GITHUB-USERNAME/dwarpal/releases/tag/v0.1.0
+[Unreleased]: https://github.com/ArvinSaini/DwarPal/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/ArvinSaini/DwarPal/releases/tag/v0.1.0

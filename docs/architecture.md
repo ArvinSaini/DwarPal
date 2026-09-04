@@ -1,6 +1,6 @@
 # Architecture
 
-Dwarpal is one Python process: a FastAPI app serving the agent-facing API and the merchant dashboard,
+DwarPal is one Python process: a FastAPI app serving the agent-facing API and the merchant dashboard,
 one SQLite file, and a set of small stores and services that share an injected clock. Money is integer
 paise everywhere. The design rule is simple: **the model proposes, deterministic code disposes, and only the
 payments adapter can reach Razorpay.**
@@ -41,7 +41,7 @@ carries a prompt injection on purpose so the demo can show that the gate, not th
 ```mermaid
 sequenceDiagram
     participant B as Buyer agent (LLM)
-    participant API as Dwarpal API
+    participant API as DwarPal API
     participant G as Gate (pure)
     participant M as Mandates
     participant X as Cross-sell (LLM)

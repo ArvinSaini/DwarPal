@@ -46,7 +46,7 @@ def require_key(idempotency_key: str | None) -> str:
 
 
 def create_app(ctx: AppContext) -> FastAPI:
-    app = FastAPI(title="Dwarpal", version=__version__,
+    app = FastAPI(title="DwarPal", version=__version__,
                   description="Makes a Razorpay merchant sellable to AI buyer agents, safely.")
     app.state.ctx = ctx
 

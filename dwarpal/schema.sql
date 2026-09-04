@@ -1,4 +1,4 @@
--- Dwarpal schema. Money is integer paise. Timestamps are unix seconds.
+-- DwarPal schema. Money is integer paise. Timestamps are unix seconds.
 
 CREATE TABLE IF NOT EXISTS products (
   id TEXT PRIMARY KEY,
