@@ -171,7 +171,7 @@ def system_context() -> str:
              ["15 purchase rules", "5 refund rules", "pure, never raises"])
     b += box(230, 322, 176, 78, "mandates.py",
              ["per-agent caps", "reserve, commit, release", "refunds give budget back"])
-    b += box(418, 322, 176, 78, "ledger.py", ["append-only hash chain", "verify · replay · receipt"],
+    b += box(418, 322, 176, 78, "ledger.py", ["append-only hash chain", "verify · anchor · replay"],
              kind="ledger")
     b += box(606, 322, 176, 78, "razorpay_client.py",
              ["the only Razorpay key", "holder · test keys only", "FakePayments in tests"])

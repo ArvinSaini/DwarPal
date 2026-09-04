@@ -42,7 +42,7 @@
 <rect x="418" y="322" width="176" height="78" rx="9" fill="#efeafb" stroke="#6244a8" stroke-width="1.4"/>
 <text x="431.0" y="346.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="13.0" fill="#1b1f24" text-anchor="start" font-weight="600">ledger.py</text>
 <text x="431.0" y="361.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="11.0" fill="#5f6b7a" text-anchor="start" font-weight="normal">append-only hash chain</text>
-<text x="431.0" y="376.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="11.0" fill="#5f6b7a" text-anchor="start" font-weight="normal">verify · replay · receipt</text>
+<text x="431.0" y="376.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="11.0" fill="#5f6b7a" text-anchor="start" font-weight="normal">verify · anchor · replay</text>
 <rect x="606" y="322" width="176" height="78" rx="9" fill="#e8f1f8" stroke="#2b5f8e" stroke-width="1.4"/>
 <text x="619.0" y="346.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="13.0" fill="#1b1f24" text-anchor="start" font-weight="600">razorpay_client.py</text>
 <text x="619.0" y="361.0" font-family="Segoe UI, Noto Sans, Helvetica Neue, Arial, sans-serif" font-size="11.0" fill="#5f6b7a" text-anchor="start" font-weight="normal">the only Razorpay key</text>
